@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sequential Circuit Design Automation System</title>
+
+  <!-- CSS — load order: base → layout → components → feature panels -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- Toolbar -->
+<div class="toolbar">
+  <span class="toolbar-icon">⚙</span>
+  <h1>Sequential Circuit Design Automation System</h1>
+  <div class="toolbar-spacer"></div>
+</div>
+
+<!-- Info bar -->
+<div class="info-bar">
+  Name: &nbsp;<strong style="color:#c8dfff">Chen Po-Hao</strong>
+  &nbsp;|&nbsp; Student ID: &nbsp;<strong style="color:#c8dfff">s1131525</strong>
+</div>
+
+<!-- Main -->
+<div class="main">
+
+  <!-- ══ LEFT: Input ══ -->
+  <div class="panel panel-left">
+    <div class="panel-body">
+
+      <div class="sec-label">1. Model Type</div>
+      <div class="radio-group" id="modelGroup">
+        <label><input type="radio" name="model" value="mealy" checked> Mealy Model</label>
+        <label><input type="radio" name="model" value="moore"> Moore Model</label>
+      </div>
+
+      <div class="sec-label">2. Flip-Flop Type</div>
+      <div class="radio-group" id="ffGroup">
+        <label><input type="radio" name="fftype" value="JK" checked> JK Flip-Flop</label>
+        <label><input type="radio" name="fftype" value="T"> T Flip-Flop</label>
+        <label><input type="radio" name="fftype" value="D"> D Flip-Flop</label>
+      </div>
+
+      <div class="sec-label">3. State Table Input</div>
+
+      <div class="field-group">
+        <label class="field-label" for="inputVars">Input Variables</label>
+        <input class="field-input" id="inputVars" type="text" value="X" placeholder="e.g. X">
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="outputVars">Output Variables</label>
+        <input class="field-input" id="outputVars" type="text" value="Z" placeholder="e.g. Z">
+      </div>
+
+      <div class="field-label" style="margin-bottom:5px; font-weight:600; color:#333;">State Table</div>
+      <div class="table-wrap">
+        <table id="stateTable">
+          <thead>
+            <tr>
+              <th>Present State</th>
+              <th id="thInput">X</th>
+              <th>Next State</th>
+              <th id="thOutput">Z</th>
+              <th style="width:22px;"></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+
+      <div class="tbl-btns">
+        <button class="btn" id="btnClear">Clear Table</button>
+        <button class="btn" id="btnLoad">Load Example</button>
+        <button class="btn" id="btnAddRow">+ Row</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ MIDDLE: Output 1 ══ -->
+  <div class="panel panel-mid">
+    <div class="panel-body" id="output1">
+      <div class="sec-label blue">Output 1: Flip-Flop Input Equations</div>
+      <div class="placeholder">
+        ⚙ Press <strong>GENERATE</strong> to compute<br>flip-flop equations and K-maps.
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ RIGHT: Output 2 ══ -->
+  <div class="panel panel-right" style="display:flex; flex-direction:column;">
+    <div style="padding: 8px 12px 0; flex-shrink:0;">
+      <div class="sec-label green" style="margin-bottom:6px;">Output 2: Sequential Circuit Diagram</div>
+    </div>
+
+    <div class="out2-toolbar">
+      <button class="btn icon-btn" id="btnZoomIn"    title="Zoom in">🔍+</button>
+      <button class="btn icon-btn" id="btnZoomOut"   title="Zoom out">🔍−</button>
+      <button class="btn icon-btn" id="btnZoomReset" title="Reset zoom">⊡</button>
+      <button class="btn icon-btn" id="btnFit"       title="Fit to panel">⤢</button>
+      <div class="out2-toolbar-sep"></div>
+      <button class="btn icon-btn" id="btnDlSVG"     title="Download SVG">⤓ SVG</button>
+      <button class="btn icon-btn" id="btnDlPNG"     title="Download PNG">⤓ PNG</button>
+    </div>
+
+    <div id="svg-container">
+      <div class="placeholder" style="margin-top:60px;">
+        ⚙ Press <strong>GENERATE</strong> to draw<br>the sequential circuit diagram.
+      </div>
+    </div>
+
+    <div class="circuit-note" id="circuitNote" style="display:none;">
+      <ul>
+        <li>Circuit diagram is generated based on simplified equations.</li>
+        <li>Junction dots (●) mark branching wires; crossings without dots are non-connected.</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<!-- Footer -->
+<div class="footer">
+  <button class="btn" id="btnSettings">⚙ Settings</button>
+  <div class="footer-center">
+    <button class="btn primary" id="btnGenerate">GENERATE</button>
+  </div>
+  <div class="footer-right">
+    <button class="btn" id="btnExport">Export Report</button>
+    <button class="btn" id="btnAbout">ⓘ About</button>
+  </div>
+</div>
+
+<!-- JS — load order: lib → circuit → logic → ui → app -->
+<script src="script.js"></script>
+
+</body>
+</html>
