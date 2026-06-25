@@ -255,7 +255,26 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 > Track planned work here before it is merged.
 
-### [1.1.0] — 2025-06-XX
+### [1.2.0] — 2026-06-25
+
+#### Improved — `circuitRender.js`
+
+- **Layout compaction**: Reduced overall SVG padding from 40 px to 10 px; tightened horizontal zone gaps (`AND_X`, `OR_X`, `FF_INLET`) to produce more compact diagrams without sacrificing readability
+- **Bus origin**: Shifted `BUS_START_X` from 160 to 140 and reduced signal-bus spacing from 16 px to 14 px, narrowing the horizontal footprint for circuits with many signals
+- **NOT gate tap**: Changed complement tap X from a hardcoded `60` to a dynamic `BUS_START_X - 70`, making the NOT gate position scale correctly with variable bus widths
+- **Flip-flop vertical spacing**: Increased `FF_GAP` from 140 px to 180 px; reduced `TOP_MARGIN` from 120 px to 80 px; net effect is more room between flip-flops for cross-wires while keeping the top margin tighter
+- **Clock routing**: Clock branch drop offset changed from `bottomY + 20` to `bottomY + 60`, routing the clock tree fully below each flip-flop box to prevent clock lines crossing gate logic
+- **Output logic zone** (`Z_Y`): Pushed down from `lastFFBot + 120` to `lastFFBot + 160` to guarantee output logic clears the lowest flip-flop's clock route
+- **Feedback routing**: Horizontal offset per feedback signal reduced from 16 px to 14 px; feedback trunk moved left from `FF_RIGHT + 30` to `FF_RIGHT + 20`, reducing the feedback waterfall width
+- **`AND`/`OR` input spacing**: `andSpacing` reduced from 56 px to 52 px, slightly tightening gate input spread for multi-input OR stages
+
+#### Improved — `exportManager.js`
+
+- **SVG size cap in PDF**: Added `max-height: 120mm` and switched SVG from `width: 100%` to `max-width: 100%; width: auto` so large circuit diagrams are scaled to fit the A4 page without overflowing
+- **Page break protection**: Added `page-break-inside: avoid` to `.circuit-section` to prevent the circuit diagram from being split across PDF pages
+- **Code readability**: Expanded dense inline CSS property chains and multi-statement HTML template strings into per-property multi-line format; no functional change
+
+### [1.1.0] — 2025-06-25
 
 #### Changed
 - Refactored monolithic `script.js` into modular `js/` directory structure
@@ -269,7 +288,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 #### Improved
 - Separated rendering concerns from core logic (design pattern optimization)
 
-### [1.0.0] — 2025-06-XX
+### [1.0.0] — 2025-06-24
 
 #### Added
 - State table editor with dynamic row management
