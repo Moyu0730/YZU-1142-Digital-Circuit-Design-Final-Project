@@ -1,6 +1,6 @@
 'use strict';
 
-function renderOutput1({ eqs, groups, ffTT, outTT, ffType, nFF, varNames, states, outVar }) {
+function renderOutput1({ eqs, groups, ffTT, outTT, ffType, nFF, varNames, outVarNames, states, outVar }) {
   const svNames = varNames.slice(0, nFF).join(', ');
 
   let html = `
@@ -60,8 +60,9 @@ function renderOutput1({ eqs, groups, ffTT, outTT, ffType, nFF, varNames, states
 
   const showKeys = Object.keys(eqs).filter(k => k !== outVar);
   [...showKeys, outVar].forEach(k => {
-    const tt = (k === outVar) ? outTT : ffTT[k];
     const isOutput = (k === outVar);
+    const tt = isOutput ? outTT : ffTT[k];
+    const currentVarNames = isOutput ? (outVarNames || varNames) : varNames;
     const hlColor = isOutput ? '#ef4444' : '#2563eb';
     const bgColor = isOutput ? '#fef2f2' : '#eff6ff';
     
@@ -72,7 +73,7 @@ function renderOutput1({ eqs, groups, ffTT, outTT, ffType, nFF, varNames, states
         </div>
         
         <div style="margin-bottom: 16px; width: 100%; display: flex; justify-content: center;">
-          ${renderKMap(tt.ones, tt.dc, varNames, groups[k])}
+          ${renderKMap(tt.ones, tt.dc, currentVarNames, groups[k])}
         </div>
         
         <div style="margin-top: auto; background: ${bgColor}; padding: 10px 16px; border-radius: 4px; border: 1px solid #94a3b8; width: 100%; text-align: center; display: flex; justify-content: center; align-items: center; gap: 8px;">
@@ -128,16 +129,28 @@ function renderKMap(ones, dc, varNames, groups = []) {
     return `<td style="background:${cellBg}; color:${cellColor}; width:${CELL_W}px !important; min-width:${CELL_W}px; max-width:${CELL_W}px; height:${CELL_H}px !important; padding:0 !important; text-align:center; vertical-align:middle; position:relative; z-index:2; border:${borderStyle}; font-size:15px; font-weight:700; box-sizing: border-box;">${c.v}</td>`;
   }
 
+  function getCornerHtml(rVar, cVar) {
+    if (!rVar) {
+      return `<div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%;">${cVar}</div>`;
+    }
+    return `
+      <div style="position:relative; width:100%; height:100%; background: linear-gradient(to top right, transparent calc(50% - 0.5px), #94a3b8 calc(50% - 0.5px), #94a3b8 calc(50% + 0.5px), transparent calc(50% + 0.5px));">
+        <span style="position:absolute; bottom:4px; left:4px; font-size:10.5px; color:#334155; font-weight:700; line-height:1; letter-spacing:0.5px;">${rVar}</span>
+        <span style="position:absolute; top:4px; right:4px; font-size:10.5px; color:#334155; font-weight:700; line-height:1; letter-spacing:0.5px;">${cVar}</span>
+      </div>
+    `;
+  }
+
   if (n === 1) {
     const [v0] = varNames;
-    t += `<tr><th ${thCorner}>${v0}</th><th ${thCol}>0</th><th ${thCol}>1</th></tr>`;
+    t += `<tr><th ${thCorner}>${getCornerHtml('', v0)}</th><th ${thCol}>0</th><th ${thCol}>1</th></tr>`;
     t += `<tr><th ${thRow}></th>`;
     for (let x = 0; x <= 1; x++) { t += getCellHtml(cellVal(x)); }
     t += `</tr>`;
   }
   else if (n === 2) {
     const [r0, c0] = varNames;
-    t += `<tr><th ${thCorner}>${r0}\\${c0}</th><th ${thCol}>0</th><th ${thCol}>1</th></tr>`;
+    t += `<tr><th ${thCorner}>${getCornerHtml(r0, c0)}</th><th ${thCol}>0</th><th ${thCol}>1</th></tr>`;
     for (let r = 0; r <= 1; r++) {
       t += `<tr><th ${thRow}>${r}</th>`;
       for (let c = 0; c <= 1; c++) {
@@ -149,8 +162,9 @@ function renderKMap(ones, dc, varNames, groups = []) {
   }
   else if (n === 3) {
     const rowVar = varNames[0];
+    const colVars = varNames[1] + varNames[2];
     const colH   = gray.map(g => `<th ${thCol}>${(g>>1)&1}${g&1}</th>`).join('');
-    t += `<tr><th ${thCorner}>${rowVar}\\${varNames[1]}${varNames[2]}</th>${colH}</tr>`;
+    t += `<tr><th ${thCorner}>${getCornerHtml(rowVar, colVars)}</th>${colH}</tr>`;
     for (let r = 0; r <= 1; r++) {
       t += `<tr><th ${thRow}>${r}</th>`;
       gray.forEach(g => {
@@ -163,8 +177,10 @@ function renderKMap(ones, dc, varNames, groups = []) {
   }
   else if (n === 4) {
     const r0 = varNames[0], r1 = varNames[1], c0 = varNames[2], c1 = varNames[3];
+    const rowVars = r0 + r1;
+    const colVars = c0 + c1;
     const colH = gray.map(g => `<th ${thCol}>${(g>>1)&1}${g&1}</th>`).join('');
-    t += `<tr><th ${thCorner}>${r0}${r1}\\${c0}${c1}</th>${colH}</tr>`;
+    t += `<tr><th ${thCorner}>${getCornerHtml(rowVars, colVars)}</th>${colH}</tr>`;
     gray.forEach(rg => {
       const rh = `${(rg>>1)&1}${rg&1}`;
       t += `<tr><th ${thRow}>${rh}</th>`;

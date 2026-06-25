@@ -24,7 +24,10 @@
 
     <section class="card panel-config" id="panelConfig">
       <div class="card-header">
-        <h2>Configuration</h2>
+        <div class="header-title">
+          <span class="drag-handle" title="Hold to drag">≡</span>
+          <h2>Configuration</h2>
+        </div>
       </div>
       <div class="card-body">
         
@@ -69,7 +72,7 @@
             </div>
           </div>
           <div class="table-container">
-            <table id="stateTable" class="modern-table">
+            <table id="stateTable" class="modern-table transition-table">
               <thead>
                 <tr>
                   <th>Present</th>
@@ -91,7 +94,10 @@
 
     <section class="card panel-equations" id="panelEq">
       <div class="card-header">
-        <h2>Logic Synthesis</h2>
+        <div class="header-title">
+          <span class="drag-handle" title="Hold to drag">≡</span>
+          <h2>Logic Synthesis</h2>
+        </div>
       </div>
       <div class="card-body full-width-container" id="output1">
         <div class="empty-state">
@@ -105,7 +111,10 @@
 
     <section class="card panel-circuit" id="panelCirc">
       <div class="card-header">
-        <h2>Circuit Schematic</h2>
+        <div class="header-title">
+          <span class="drag-handle" title="Hold to drag">≡</span>
+          <h2>Circuit Schematic</h2>
+        </div>
         <div class="toolbar">
           <button class="icon-btn" id="btnZoomIn" title="Zoom In">🔍+</button>
           <button class="icon-btn" id="btnZoomOut" title="Zoom Out">🔍-</button>
@@ -134,8 +143,8 @@
 
   <footer class="bottom-bar">
     <div class="bar-left">
-      <button class="btn btn-ghost" id="btnSettings">⚙ Settings</button>
-      <button class="btn btn-ghost" id="btnAbout">ⓘ About</button>
+      <button class="btn btn-bordered" id="btnSettings">⚙ Settings</button>
+      <button class="btn btn-bordered" id="btnAbout">ⓘ About</button>
     </div>
     <div class="bar-center">
       <button class="btn btn-primary btn-large" id="btnGenerate">GENERATE CIRCUIT</button>

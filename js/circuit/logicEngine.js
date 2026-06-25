@@ -1,10 +1,75 @@
 'use strict';
 
-// Global state required for PDF Export
 let lastResult = null;
 
-// ─── Quine-McCluskey & Bitwise Operations ───────────────────────────────────
+// =========================================================
+// 1. BOOLEAN EXPRESSION PARSER (AST GENERATOR)
+// =========================================================
+function parseBool(str) {
+  str = (str || '').trim();
+  if (!str || str === '0') return { t: 'c', v: 0 };
+  if (str === '1')         return { t: 'c', v: 1 };
 
+  const raw = [];
+  for (let i = 0; i < str.length; ) {
+    const c = str[i];
+    if (/\s/.test(c)) { i++; continue; }
+    if (c === '+')  { raw.push('OR');  i++; }
+    else if (c === '·' || c === '*') { raw.push('AND'); i++; }
+    else if (c === "'") { raw.push('NOT'); i++; }
+    else if (c === '(') { raw.push('('); i++; }
+    else if (c === ')') { raw.push(')'); i++; }
+    else if (/[A-Za-z0-9_]/.test(c)) { 
+      let v = ''; while (i < str.length && /[A-Za-z0-9_]/.test(str[i])) v += str[i++];
+      raw.push({ v });
+    } else i++;
+  }
+  const toks = [];
+  raw.forEach((t, i) => {
+    toks.push(t);
+    if (i + 1 < raw.length) {
+      const cur = raw[i], nxt = raw[i + 1];
+      const isEnd   = typeof cur === 'object' || cur === 'NOT' || cur === ')';
+      const isStart = typeof nxt === 'object' || nxt === '(';
+      if (isEnd && isStart) toks.push('AND');
+    }
+  });
+
+  let p = 0;
+  const pk = () => toks[p];
+  const nt = () => toks[p++];
+
+  function eOR()  { let l = eAND(); while (pk()==='OR')  { nt(); l={t:'or', c:[l,eAND()]}; } return l; }
+  function eAND() { let l = eNOT(); while (pk()==='AND') { nt(); l={t:'and',c:[l,eNOT()]}; } return l; }
+  function eNOT() { let n = ePRI(); while (pk()==='NOT') { nt(); n={t:'not',c:[n]};         } return n; }
+  function ePRI() {
+    if (!pk()) return {t:'c',v:0};
+    if (pk() === '(') { nt(); const e=eOR(); if(pk()===')') nt(); return e; }
+    if (typeof pk() === 'object') {
+      const { v } = nt();
+      if (v==='0') return {t:'c',v:0};
+      if (v==='1') return {t:'c',v:1};
+      return {t:'v',v};
+    }
+    return {t:'c',v:0};
+  }
+  return eOR();
+}
+
+function flatAST(ast) {
+  if (!ast) return {t:'c',v:0};
+  if (ast.t==='and'||ast.t==='or') {
+    const ch = ast.c.map(flatAST), fl = [];
+    ch.forEach(c => (c.t===ast.t ? fl.push(...c.c) : fl.push(c)));
+    return {...ast, c: fl};
+  }
+  if (ast.t==='not') return {...ast, c:[flatAST(ast.c[0])]};
+  return ast;
+}
+
+// =========================================================
+// 2. QUINE-MCCLUSKEY ALGORITHM ENGINE
+// =========================================================
 function popcount(n) {
   let c = 0; while (n) { c += n & 1; n >>>= 1; } return c;
 }
@@ -92,8 +157,9 @@ function qm(minterms, dontcares, nVars, names) {
   return { eq: terms.join(' + ') || '0', groups: selectedPrimes };
 }
 
-// ─── Flip-flop Excitation Tables ────────────────────────────────────────────
-
+// =========================================================
+// 3. FLIP-FLOP EXCITATION TABLES
+// =========================================================
 function exciteJK(q, qn) {
   if (q === 0 && qn === 0) return { J: 0, K: -1 };
   if (q === 0 && qn === 1) return { J: 1, K: -1 };
@@ -103,72 +169,9 @@ function exciteJK(q, qn) {
 function exciteT(q, qn)  { return { T: q ^ qn }; }
 function exciteD(q, qn)  { return { D: qn }; }
 
-// ─── Boolean Expression Parser (AST) ────────────────────────────────────────
-
-function parseBool(str) {
-  str = (str || '').trim();
-  if (!str || str === '0') return { t: 'c', v: 0 };
-  if (str === '1')         return { t: 'c', v: 1 };
-
-  const raw = [];
-  for (let i = 0; i < str.length; ) {
-    const c = str[i];
-    if (/\s/.test(c)) { i++; continue; }
-    if (c === '+')  { raw.push('OR');  i++; }
-    else if (c === '·' || c === '*') { raw.push('AND'); i++; }
-    else if (c === "'") { raw.push('NOT'); i++; }
-    else if (c === '(') { raw.push('('); i++; }
-    else if (c === ')') { raw.push(')'); i++; }
-    else if (/[A-Z0-9]/.test(c)) {
-      let v = ''; while (i < str.length && /[A-Z0-9]/.test(str[i])) v += str[i++];
-      raw.push({ v });
-    } else i++;
-  }
-  const toks = [];
-  raw.forEach((t, i) => {
-    toks.push(t);
-    if (i + 1 < raw.length) {
-      const cur = raw[i], nxt = raw[i + 1];
-      const isEnd   = typeof cur === 'object' || cur === 'NOT' || cur === ')';
-      const isStart = typeof nxt === 'object' || nxt === '(';
-      if (isEnd && isStart) toks.push('AND');
-    }
-  });
-
-  let p = 0;
-  const pk = () => toks[p];
-  const nt = () => toks[p++];
-
-  function eOR()  { let l = eAND(); while (pk()==='OR')  { nt(); l={t:'or', c:[l,eAND()]}; } return l; }
-  function eAND() { let l = eNOT(); while (pk()==='AND') { nt(); l={t:'and',c:[l,eNOT()]}; } return l; }
-  function eNOT() { let n = ePRI(); while (pk()==='NOT') { nt(); n={t:'not',c:[n]};         } return n; }
-  function ePRI() {
-    if (!pk()) return {t:'c',v:0};
-    if (pk() === '(') { nt(); const e=eOR(); if(pk()===')') nt(); return e; }
-    if (typeof pk() === 'object') {
-      const { v } = nt();
-      if (v==='0') return {t:'c',v:0};
-      if (v==='1') return {t:'c',v:1};
-      return {t:'v',v};
-    }
-    return {t:'c',v:0};
-  }
-  return eOR();
-}
-
-function flatAST(ast) {
-  if (!ast) return {t:'c',v:0};
-  if (ast.t==='and'||ast.t==='or') {
-    const ch = ast.c.map(flatAST), fl = [];
-    ch.forEach(c => (c.t===ast.t ? fl.push(...c.c) : fl.push(c)));
-    return {...ast, c: fl};
-  }
-  if (ast.t==='not') return {...ast, c:[flatAST(ast.c[0])]};
-  return ast;
-}
-
-// ─── Main Logic Controller ──────────────────────────────────────────────────
-
+// =========================================================
+// 4. MAIN GENERATION CONTROLLER
+// =========================================================
 function generate() {
   try {
     const rows = getTableData();
@@ -176,20 +179,26 @@ function generate() {
 
     const ffType = document.querySelector('input[name=fftype]:checked').value;
     const model  = document.querySelector('input[name=model]:checked').value;
+    
     const outVar = (document.getElementById('outputVars').value.trim() || 'Z').split(',')[0].trim();
+    const inVar  = (document.getElementById('inputVars').value.trim() || 'X').split(',')[0].trim();
 
     const states = [...new Set(rows.map(r => r.ps))].sort();
     const nFF    = Math.ceil(Math.log2(Math.max(states.length, 2)));
     const code   = {};
     states.forEach((s, i) => { code[s] = i; });
 
-    const varNames = [];
-    for (let b = nFF - 1; b >= 0; b--) varNames.push(`Q${b}`);
-    varNames.push('X');
+    // Isolate pure state variables for Moore calculations
+    const stateVarNames = [];
+    for (let b = nFF - 1; b >= 0; b--) stateVarNames.push(`Q${b}`);
+    
+    const varNames = [...stateVarNames];
+    varNames.push(inVar);
     const nVars = nFF + 1;
 
     const ffTT = {};
-    const outTT = { ones: [], dc: [] };
+    const outTT = { ones: [], dc: [] };         // Mealy model storage
+    const outTT_moore = { ones: [], dc: [] };   // Moore model storage
 
     const mkFF = (prefix, bit) => {
       const keys = ffType === 'JK' ? [`J${bit}`, `K${bit}`]
@@ -202,6 +211,7 @@ function generate() {
     for (let b = nFF - 1; b >= 0; b--) allFFkeys.push(...mkFF(ffType, b));
 
     const seen = new Set();
+    const seenMoore = new Set();
 
     rows.forEach(row => {
       const ps   = code[row.ps];
@@ -225,8 +235,17 @@ function generate() {
           if (exciteD(q,qn).D === 1) ffTT[`D${b}`].ones.push(idx);
         }
       }
+      
       const zVal = parseInt(row.z) || 0;
+      
+      // Compute for Mealy (Z dependent on State + Input)
       if (zVal === 1) outTT.ones.push(idx);
+
+      // Compute for Moore (Z dependent strictly on State)
+      if (!seenMoore.has(ps)) {
+        seenMoore.add(ps);
+        if (zVal === 1) outTT_moore.ones.push(ps);
+      }
     });
 
     for (let i = 0; i < (1 << nVars); i++) {
@@ -236,26 +255,37 @@ function generate() {
       }
     }
 
+    // Populate don't cares for Moore missing states
+    for (let i = 0; i < (1 << nFF); i++) {
+      if (!seenMoore.has(i)) outTT_moore.dc.push(i);
+    }
+
     const eqs = {};
     const groups = {};
+    
+    // Process FF calculations
     allFFkeys.forEach(k => { 
       const res = qm(ffTT[k].ones, ffTT[k].dc, nVars, varNames);
       eqs[k] = res.eq;
       groups[k] = res.groups;
     });
     
-    const outRes = qm(outTT.ones, outTT.dc, nVars, varNames);
+    // Contextual Routing: Apply the appropriate data set based on User Model Choice
+    const finalOutTT = model === 'moore' ? outTT_moore : outTT;
+    const finalOutVars = model === 'moore' ? stateVarNames : varNames;
+    const finalOutNVars = model === 'moore' ? nFF : nVars;
+
+    const outRes = qm(finalOutTT.ones, finalOutTT.dc, finalOutNVars, finalOutVars);
     eqs[outVar] = outRes.eq;
     groups[outVar] = outRes.groups;
 
-    lastResult = { eqs, groups, ffTT, outTT, ffType, nFF, nVars, varNames, states, code, rows, outVar, model };
+    lastResult = { eqs, groups, ffTT, outTT: finalOutTT, ffType, nFF, nVars, varNames, outVarNames: finalOutVars, states, code, rows, outVar, model };
 
-    // Passes payload to UI renderers
     renderOutput1(lastResult);
     renderOutput2(lastResult);
 
   } catch (error) {
-    console.error("Generate Error: ", error);
+    console.error("[CRITICAL] Generate Error: ", error);
     alert("An error occurred during generation. Check the console for details.\n\n" + error.message);
   }
 }

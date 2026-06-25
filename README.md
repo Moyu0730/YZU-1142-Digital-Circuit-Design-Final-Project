@@ -257,6 +257,45 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+### [1.4.0] — 2026-06-25
+
+#### Fixed — `js/circuit/logicEngine.js`
+
+- **Moore model output equation** (KI-001 partial fix): Added separate `outTT_moore` truth table that computes output Z based on present state only, independent of the input variable; Mealy still uses full state+input truth table; correct data set is routed via `finalOutTT / finalOutVars / finalOutNVars` based on the user's model selection
+- **Variable name tokenizer**: Parser regex changed from `/[A-Z0-9]/` to `/[A-Za-z0-9_]/` — lowercase variable names (e.g. `x`, `clk`) and underscored names now parse correctly instead of being silently dropped
+- **Hardcoded input variable**: `varNames` now reads the actual input variable name from the form field (`inVar`) instead of always inserting the literal string `'X'`
+
+#### Added — `js/app.js`
+
+- **Live table header sync**: `input` event listeners on the Input/Output variable fields immediately update `<th>` text as the user types, without triggering equation recalculation — header always reflects current variable names before GENERATE is clicked
+
+#### Changed — `js/circuit/logicEngine.js`
+
+- **File structure**: Reorganized into four numbered sections with block-comment headers — `1. BOOLEAN EXPRESSION PARSER`, `2. QUINE-MCCLUSKEY ENGINE`, `3. FLIP-FLOP EXCITATION TABLES`, `4. MAIN GENERATION CONTROLLER`; `parseBool` and `flatAST` moved to Section 1 (top of file) to reflect their dependency order
+- **`lastResult` payload**: Added `outVarNames` field so renderers receive the correct variable name list for the output K-map (state-only for Moore, full for Mealy)
+
+#### Changed — `js/render/kmapRender.js`
+
+- **`getCornerHtml()` helper**: K-map corner cells now render with a CSS diagonal divider line (textbook style) — row variable label anchored bottom-left, column variable label anchored top-right; plain `backslash` separator replaced
+- **`outVarNames` routing**: Output K-map now passes `outVarNames` (from `lastResult`) to `renderKMap` so the Moore output K-map shows only state variable axes, not the input variable axis
+
+#### Changed — `css/styles.css`
+
+- **`.drag-handle`**: New indicator element — `≡` icon in `.card-header` that turns `--primary` blue on hover, signaling the panel is draggable; hidden from drag events (`pointer-events: none` on `h2`)
+- **`.transition-table` specialization**: First column of the state table gets a light `#f1f5f9` background with a darker right border to visually separate the origin state; first cell gets a subtle dot pseudo-element (`::before`)
+- **`.btn-bordered`**: New button variant (light background, visible border, muted text) for utility buttons such as Settings and About; replaces `.btn-ghost` in the footer
+- **Section comments**: Added `/* --- */` comment headers throughout the file to improve navigation
+
+#### Changed — `index.html` & `js/ui/tableManager.js`
+
+- **Drag handle markup**: Added `.header-title` wrapper with `<span class="drag-handle">≡</span>` to all three card headers
+- **State table class**: Added `transition-table` to the table element to pick up first-column styling
+- **Settings / About buttons**: Swapped from `.btn-ghost` to `.btn.btn-bordered`
+- **Cell placeholders**: Input cell placeholder text changed from `"A"` / `"0"` to `"-"` for neutrality
+- **`loadExample` defensive coding**: Added null guards before setting `inputVars`, `outputVars`, `thInput`, `thOutput`
+
+---
+
 ### [1.3.0] — 2026-06-25
 
 #### Added — `js/app.js`

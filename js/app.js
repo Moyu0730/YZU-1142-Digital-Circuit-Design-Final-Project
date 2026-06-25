@@ -7,7 +7,7 @@ function openSettings() {
 
 function openAbout() {
   console.log('[UI] About button clicked.');
-  alert('Sequential Circuit Design Automation System\n\nVersion 3.10 (Synchronized Progress Glow)\nFinal Project – Digital Circuit Design');
+  alert('Sequential Circuit Design Automation System\n\nVersion 4.1 (Manual Generation Flow)\nFinal Project – Digital Circuit Design');
 }
 
 function initSplittersAndDrag() {
@@ -66,7 +66,6 @@ function initSplittersAndDrag() {
   let draggedCard = null;
 
   cards.forEach(card => {
-    // Inject custom responsive SVG tracker inside glow container
     const glowEl = document.createElement('div');
     glowEl.className = 'card-glow';
     glowEl.innerHTML = `
@@ -85,14 +84,12 @@ function initSplittersAndDrag() {
       if (e.target.closest('button') || e.target.closest('.toolbar')) return;
       
       dragUnlocked = false;
-      // Triggers the red clockwise drawing animation
       card.classList.add('long-pressing-loading');
 
-      // Locked to exactly 300ms as requested
       pressTimer = setTimeout(() => {
         dragUnlocked = true;
         card.classList.remove('long-pressing-loading');
-        card.classList.add('drag-ready'); // Locks into permanent green highlighter halo
+        card.classList.add('drag-ready');
       }, 300); 
     });
 
@@ -202,6 +199,24 @@ function initEvents() {
   bind('btnSettings', openSettings);
   bind('btnExport', exportReport);
   bind('btnAbout', openAbout);
+
+  // Live Binding strictly for table headers X/Z text synchronization, 
+  // without triggering backend equation recalculation until Generate is clicked.
+  const inpVarEl = document.getElementById('inputVars');
+  const outVarEl = document.getElementById('outputVars');
+  const thInp = document.getElementById('thInput');
+  const thOut = document.getElementById('thOutput');
+
+  if (inpVarEl && thInp) {
+    inpVarEl.addEventListener('input', (e) => {
+      thInp.textContent = e.target.value.trim() || 'X';
+    });
+  }
+  if (outVarEl && thOut) {
+    outVarEl.addEventListener('input', (e) => {
+      thOut.textContent = e.target.value.trim() || 'Z';
+    });
+  }
 
   window.addEventListener('resize', () => {
     if (document.getElementById('circuit-svg')) {
