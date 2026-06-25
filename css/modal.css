@@ -1,0 +1,226 @@
+/* --- Modal (Pop-up Overlay) Component Styles --- */
+
+body.modal-open {
+  overflow: hidden; 
+  height: 100vh;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.6); 
+  backdrop-filter: blur(5px); 
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease-in-out, visibility 0.25s ease-in-out;
+  padding: 40px; 
+}
+
+.modal-backdrop.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal-content {
+  background: var(--card-bg);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 768px; 
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  transform: scale(0.95);
+  transition: transform 0.25s ease-in-out;
+  max-height: calc(100vh - 80px); 
+  margin: auto;
+}
+
+.modal-content.modal-wide {
+  max-width: 960px; 
+}
+
+.modal-backdrop.active .modal-content {
+  transform: scale(1);
+}
+
+.modal-header {
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--nav-bg); 
+  border-radius: 12px 12px 0 0;
+  flex-shrink: 0;
+}
+
+.modal-header h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff; 
+  margin: 0;
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  color: #cbd5e1;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.modal-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f87171;
+}
+
+/* Default body scrolling */
+.modal-body {
+  padding: 32px 48px; 
+  color: var(--text-main);
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-y: auto; 
+}
+
+/* >>> PURE PDF MODE: Disables modal body scroll to prevent double scrollbars <<< */
+.modal-body.pdf-mode {
+  padding: 24px;
+  overflow: hidden; 
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  background: #f8fafc;
+  border-radius: 0 0 12px 12px;
+  flex-shrink: 0;
+}
+
+/* Settings */
+.settings-form { display: flex; flex-direction: column; gap: 24px; }
+.settings-group { display: flex; flex-direction: column; gap: 8px; }
+.settings-group label { font-size: 13px; font-weight: 600; color: var(--text-main); }
+.settings-group select, .settings-group input { width: 100%; padding: 10px 14px; border: 1px solid var(--border-dark); border-radius: 6px; font-size: 14px; outline: none; background-color: #ffffff; color: #0f172a; }
+.settings-group select:focus, .settings-group input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+.swatch-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 8px; }
+@media (max-width: 600px) { .swatch-grid { grid-template-columns: repeat(2, 1fr); } }
+.theme-swatch-card { display: flex; flex-direction: column; background: #ffffff; border: 2px solid #cbd5e1; border-radius: 8px; cursor: pointer; overflow: hidden; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); position: relative; }
+.theme-swatch-card:hover { transform: translateY(-2px); border-color: #94a3b8; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+.theme-swatch-card.selected { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2); }
+.theme-swatch-card.selected::after { content: '✓'; position: absolute; top: 8px; right: 8px; width: 20px; height: 20px; background: var(--primary); color: #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; }
+.swatch-visual { height: 64px; display: flex; width: 100%; border-bottom: 1px solid #e2e8f0; }
+.swatch-chunk { flex: 1; height: 100%; }
+
+.swatch-navy-nav { background-color: #0f172a; } .swatch-navy-card { background-color: #ffffff; border-left: 1px solid #e2e8f0; } .swatch-navy-accent { background-color: #2563eb; }
+.swatch-graphite-nav { background-color: #334155; } .swatch-graphite-card { background-color: #ffffff; border-left: 1px solid #e2e8f0; } .swatch-graphite-accent { background-color: #475569; }
+.swatch-eng-nav { background-color: #e2e8f0; } .swatch-eng-card { background-color: #ffffff; border-left: 1px solid #cbd5e1; } .swatch-eng-accent { background-color: #64748b; }
+.swatch-sci-nav { background-color: #065f46; } .swatch-sci-card { background-color: #f0fdf4; border-left: 1px solid #bbf7d0; } .swatch-sci-accent { background-color: #10b981; }
+.swatch-sunset-nav { background-color: #9a3412; } .swatch-sunset-card { background-color: #fffbeb; border-left: 1px solid #fde68a; } .swatch-sunset-accent { background-color: #ea580c; }
+.swatch-purple-nav { background-color: #581c87; } .swatch-purple-card { background-color: #f5f3ff; border-left: 1px solid #ddd6fe; } .swatch-purple-accent { background-color: #7c3aed; }
+.swatch-quantum-nav { background-color: #000000; } .swatch-quantum-card { background-color: #0f172a; border-left: 1px solid #334155; } .swatch-quantum-accent{ background-color: #3b82f6; }
+.swatch-ocean-nav { background-color: #0369a1; } .swatch-ocean-card { background-color: #f0f9ff; border-left: 1px solid #bae6fd; } .swatch-ocean-accent { background-color: #0284c7; }
+.swatch-rose-nav { background-color: #9f1239; } .swatch-rose-card { background-color: #fff1f2; border-left: 1px solid #fecdd3; } .swatch-rose-accent { background-color: #f43f5e; }
+.swatch-amber-nav { background-color: #713f12; } .swatch-amber-card { background-color: #fef9c3; border-left: 1px solid #fef08a; } .swatch-amber-accent { background-color: #ca8a04; }
+
+.swatch-details { padding: 12px 14px; background-color: #f8fafc; display: flex; flex-direction: column; gap: 2px; }
+.swatch-title { font-size: 13px; font-weight: 700; color: #0f172a; }
+.swatch-desc { font-size: 11px; color: #475569; }
+
+/* --- PDF Print Preview Controls --- */
+.pdf-controls-bar {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  background: #e2e8f0;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid #94a3b8;
+  flex-shrink: 0;
+}
+
+.pdf-controls-bar button {
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pdf-controls-bar button:hover {
+  background: #f1f5f9;
+  border-color: #64748b;
+}
+
+.pdf-select-menu {
+  appearance: none;
+  background: #fff url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='6' fill='%23334155'%3E%3Cpath d='M0 0h12L6 6z'/%3E%3C/svg%3E") no-repeat right 10px center;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 6px 32px 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  outline: none;
+}
+
+.pdf-select-menu:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+/* >>> THE TRAY (Contains the single true native scrollbar) <<< */
+.pdf-preview-viewport {
+  flex: 1;
+  background: #525659; /* Standard Chrome PDF Gray */
+  padding: 32px; /* Generous boundary padding */
+  border-radius: 8px;
+  box-shadow: inset 0 3px 8px 0 rgba(0,0,0,0.3);
+  
+  overflow: auto; /* THIS IS THE ONLY ALLOWED SCROLLBAR */
+  min-height: 50vh;
+}
+
+/* >>> DYNAMIC SCALE WRAPPER: Handles transformed dimension reporting <<< */
+.pdf-scale-container {
+  margin: 0 auto;
+  position: relative; /* Acts as an anchor for absolute iframe */
+  transition: width 0.15s ease, height 0.15s ease;
+}
+
+/* >>> A4 SHEET: Absolute positioning prevents layout disruption, scales perfectly <<< */
+.pdf-preview-iframe {
+  position: absolute;
+  top: 0; left: 0;
+  width: 794px; /* Fixed A4 physical pixel width */
+  
+  background: #ffffff;
+  border: 1px solid #cbd5e1; 
+  box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+  transform-origin: top left;
+  transition: transform 0.15s ease-in-out; 
+  
+  /* Scrolling is strictly handed over to viewport tray */
+  overflow: hidden; 
+}

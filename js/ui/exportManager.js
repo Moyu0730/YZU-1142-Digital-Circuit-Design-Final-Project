@@ -66,7 +66,7 @@ function exportReport() {
   const trs = tableClone.querySelectorAll('tbody tr');
   trs.forEach(tr => {
     const tds = tr.querySelectorAll('td');
-    if (tds.length > 0) tds[tds.length - 1].remove(); 
+    if (ths.length > 0) tds[ths.length - 1].remove(); 
     
     const inputs = tr.querySelectorAll('input');
     inputs.forEach(input => {
@@ -86,18 +86,22 @@ function exportReport() {
       <meta charset="UTF-8">
       <title>Sequential Circuit Design Report</title>
       <style>
-        @page { 
-          size: A4 portrait; 
-          margin: 15mm 15mm; 
-        }
-
         *, *::before, *::after { box-sizing: border-box; }
 
-        body { 
-          font-family: 'Segoe UI', Arial, sans-serif; 
-          padding: 0; margin: 0; color: #0f172a; 
-          line-height: 1.4; background: #fff; 
-          width: 100%; 
+        @media screen {
+          html, body { margin: 0; padding: 0; overflow: hidden; background: transparent; }
+          body { 
+            width: 794px; 
+            padding: 15mm; 
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            color: #0f172a; line-height: 1.4; 
+          }
+        }
+
+        @media print {
+          @page { size: A4 portrait; margin: 15mm; }
+          html, body { margin: 0; padding: 0; width: 100%; font-family: 'Segoe UI', Arial, sans-serif; color: #0f172a; line-height: 1.4; }
         }
         
         .header { 
@@ -114,13 +118,11 @@ function exportReport() {
           color: #2563eb; margin-top: 24px; border-bottom: 1px solid #cbd5e1; 
           padding-bottom: 6px; margin-bottom: 12px; font-size: 16px; 
           width: 100%; text-transform: uppercase; letter-spacing: 0.5px;
-          page-break-after: avoid; /* CRITICAL: Prevents orphaned headings */
+          page-break-after: avoid; 
           page-break-inside: avoid;
         }
 
-        h3 {
-          page-break-after: avoid; /* CRITICAL: Prevents sub-headings from detaching */
-        }
+        h3 { page-break-after: avoid; }
         
         .info-section { 
           display: flex; justify-content: space-between; margin-bottom: 20px; 
@@ -131,13 +133,9 @@ function exportReport() {
         .info-section p { margin: 0; }
         .info-section strong { color: #334155; margin-right: 6px; text-transform: uppercase; font-size: 11px; }
         
-        /* Applied Global Modern Table Rules for PDF */
         .table-container { 
-          border: 2px solid #334155 !important; 
-          border-radius: 4px; 
-          overflow: hidden; 
-          margin-bottom: 16px; 
-          page-break-inside: avoid; /* Keeps tables intact */
+          border: 2px solid #334155 !important; border-radius: 4px; 
+          overflow: hidden; margin-bottom: 16px; page-break-inside: avoid; 
         }
         .modern-table { border-collapse: collapse; width: 100%; font-size: 14px; text-align: center; }
         .modern-table th, .modern-table td { border: 1px solid #94a3b8 !important; padding: 10px; }
@@ -147,27 +145,16 @@ function exportReport() {
           -webkit-print-color-adjust: exact; print-color-adjust: exact; 
         }
         .modern-table tbody tr:nth-child(even) td { background-color: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        .modern-table tbody tr.highlight-row td { background-color: #fef2f2 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         .modern-table td { font-weight: 600; }
         
         .placeholder, .sec-label, .empty-state, .drag-handle { display: none !important; }
         
-        /* Ensures K-Maps wrap cleanly */
-        .circuit-section {
-          margin-top: 16px;
-          width: 100%;
-          page-break-inside: avoid;
-        }
-        .svg-wrap { 
-          text-align: center; margin-top: 16px; width: 100%; 
-        }
+        .circuit-section { margin-top: 16px; width: 100%; page-break-inside: avoid; }
+        .svg-wrap { text-align: center; margin-top: 16px; width: 100%; }
         svg { 
-          max-width: 100% !important; 
-          max-height: 120mm !important; 
-          width: auto !important;
-          height: auto !important; 
-          border: 1px solid #cbd5e1 !important; 
-          border-radius: 4px;
+          max-width: 100% !important; max-height: 120mm !important; 
+          width: auto !important; height: auto !important; 
+          border: 1px solid #cbd5e1 !important; border-radius: 4px;
         }
       </style>
     </head>
@@ -204,13 +191,149 @@ function exportReport() {
     </html>
   `;
 
-  const printWin = window.open('', '_blank');
-  printWin.document.open();
-  printWin.document.write(reportHTML);
-  printWin.document.close();
+  // >>> REFACTORED SCALER DOM: Pure single-scrollbar architecture <<<
+  const previewBodyHtml = `
+    <div class="pdf-controls-bar">
+      <select class="pdf-select-menu" id="pdfZoomSelect" onchange="onZoomMenuChange(this.value)">
+        <option value="fit_page">Fit to Page</option>
+        <option value="fit_width" selected>Fit to Width</option>
+        <option value="actual">Actual Size (1:1)</option>
+        <option value="0.5">50%</option>
+        <option value="1.0">100%</option>
+        <option value="1.5">150%</option>
+        <option value="2.0">200%</option>
+      </select>
+      <button onclick="adjustIframeZoom(0.1)">Zoom +</button>
+      <button onclick="adjustIframeZoom(-0.1)">Zoom -</button>
+      <span style="font-size:12px; color:var(--text-muted); margin-left:auto;">
+        ℹ️ Scroll down to preview entire document.
+      </span>
+    </div>
+    
+    <div class="pdf-preview-viewport" id="pdfViewportArea">
+      <div class="pdf-scale-container" id="pdfScaleWrapper">
+        <iframe class="pdf-preview-iframe" id="pdfPreviewerIframe" scrolling="no"></iframe>
+      </div>
+    </div>
+  `;
 
+  const previewFooterHtml = `
+    <button class="btn btn-bordered" onclick="closeSystemModal()">Dismiss</button>
+    <button class="btn btn-primary" onclick="triggerEmbeddedPrint()">Confirm Print & Export</button>
+  `;
+
+  openSystemModalWidened('PDF Print Preview & Export', previewBodyHtml, previewFooterHtml);
+
+  // Securely lock the modal body to pass scroll control entirely to pdfViewportArea
   setTimeout(() => {
-    printWin.focus();
-    printWin.print();
-  }, 500);
+    const modalBodyContent = document.getElementById('modalBodyContent');
+    if (modalBodyContent) modalBodyContent.classList.add('pdf-mode');
+
+    const iframe = document.getElementById('pdfPreviewerIframe');
+    if (iframe) {
+      const doc = iframe.contentDocument || iframe.contentWindow.document;
+      doc.open();
+      doc.write(reportHTML);
+      doc.close();
+      
+      iframe.currentZoom = 1.0;
+      
+      // Allow browser 150ms to finish rendering internal heights before calculating scale
+      setTimeout(fitIframeToWidth, 150); 
+    }
+  }, 100);
+}
+
+// =========================================================
+// Advanced Scale Integration: Absolute Wrapper Projection
+// =========================================================
+function applyIframeScale(scale) {
+  const iframe = document.getElementById('pdfPreviewerIframe');
+  const wrapper = document.getElementById('pdfScaleWrapper');
+  const select = document.getElementById('pdfZoomSelect');
+  
+  if (iframe && wrapper) {
+    iframe.currentZoom = scale;
+    
+    // 1. Detect natural document height organically
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    let contentHeight = 1123; // Minimum 1 A4 physical height
+    if (doc && doc.body) {
+        contentHeight = Math.max(1123, doc.body.scrollHeight);
+    }
+    
+    // 2. Set dimensions & absolute scale transforming
+    iframe.style.height = contentHeight + 'px';
+    iframe.style.transform = `scale(${scale})`;
+    
+    // 3. Project the scaled dimensions onto the invisible wrapper
+    // This allows the outer gray tray to display precise, single scrollbars!
+    wrapper.style.width = (794 * scale) + 'px';
+    wrapper.style.height = (contentHeight * scale) + 'px';
+    
+    // Sync dropdown UI
+    if (select) {
+        Array.from(select.options).forEach(opt => {
+            if (parseFloat(opt.value) === scale) opt.selected = true;
+        });
+    }
+  }
+}
+
+function onZoomMenuChange(val) {
+  if (val === 'fit_page') fitIframeToContainer();
+  else if (val === 'fit_width') fitIframeToWidth();
+  else if (val === 'actual') applyIframeScale(1.0);
+  else {
+    const scale = parseFloat(val);
+    if (!isNaN(scale)) applyIframeScale(scale);
+  }
+}
+
+function fitIframeToContainer() {
+  const viewport = document.getElementById('pdfViewportArea');
+  const iframe = document.getElementById('pdfPreviewerIframe');
+  if (viewport && iframe) {
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    const contentHeight = (doc && doc.body) ? Math.max(1123, doc.body.scrollHeight) : 1123;
+      
+    const paddingBuffer = 80; // Safe clearance for gray tray boundaries
+    const scaleWidth = (viewport.clientWidth - paddingBuffer) / 794;
+    const scaleHeight = (viewport.clientHeight - paddingBuffer) / contentHeight;
+    applyIframeScale(Math.min(1.0, scaleWidth, scaleHeight));
+    
+    const select = document.getElementById('pdfZoomSelect');
+    if (select) select.value = 'fit_page';
+  }
+}
+
+function fitIframeToWidth() {
+  const viewport = document.getElementById('pdfViewportArea');
+  if (viewport) {
+    const paddingBuffer = 80;
+    const scaleWidth = (viewport.clientWidth - paddingBuffer) / 794;
+    
+    // Defaulting to max scale of 1.5 to prevent extreme massive zooms on wide screens
+    applyIframeScale(Math.min(1.5, scaleWidth));
+    
+    const select = document.getElementById('pdfZoomSelect');
+    if (select) select.value = 'fit_width';
+  }
+}
+
+function adjustIframeZoom(amount) {
+  const iframe = document.getElementById('pdfPreviewerIframe');
+  if (iframe) {
+    let newZoom = (iframe.currentZoom || 1.0) + amount;
+    newZoom = Math.max(0.25, Math.min(3.0, newZoom)); 
+    applyIframeScale(newZoom);
+  }
+}
+
+function triggerEmbeddedPrint() {
+  const iframe = document.getElementById('pdfPreviewerIframe');
+  if (iframe) {
+    iframe.contentWindow.focus();
+    iframe.contentWindow.print();
+  }
 }

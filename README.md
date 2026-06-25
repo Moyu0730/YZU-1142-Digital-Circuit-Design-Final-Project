@@ -243,8 +243,9 @@ Precedence: NOT (') > AND (·/*) > OR (+)
 |---|---|---|
 | KI-001 | Medium | Output variable synthesis uses only the first defined output variable; multi-output circuits require manual workaround |
 | KI-002 | Low | `script.js` (legacy monolith) and the modular `js/` tree are not kept in sync; `script.js` is for reference only |
-| KI-003 | Low | Settings panel button is wired but shows a placeholder stub |
+| KI-003 | ~~Low~~ | ~~Settings panel button is wired but shows a placeholder stub~~ — **Resolved in v1.5.0** |
 | KI-004 | Low | Very large state machines (5+ flip-flops) may produce cluttered SVG diagrams with overlapping routes |
+| KI-005 | Medium | `exportReport()` references undefined `ths` variable (`if (ths.length > 0) tds[ths.length - 1].remove()`); causes `ReferenceError` on export — delete-button column is not stripped from the PDF state table |
 
 ## Changelog
 
@@ -254,6 +255,41 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### [Unreleased]
 
 > Track planned work here before it is merged.
+
+---
+
+### [1.5.0] — 2026-06-26
+
+#### Added — `js/ui/modalManager.js` + `css/modal.css` *(new files)*
+
+- **Global modal system**: `createModalSystem()` injects a single reusable backdrop + modal DOM node on first use; `openSystemModal()` / `openSystemModalWidened()` populate it; `closeSystemModal()` animates out and removes the node — no permanent DOM residue between sessions
+- **Settings panel** *(resolves KI-003)*: `openSettings()` now opens a full modal with a 10-swatch color theme picker; `selectPaletteOption()` highlights the chosen card; `applyThemeImmediate()` writes CSS custom properties live on `:root` for instant full-app recolor without a page reload
+- **10 built-in color themes**: Deep Industrial Navy (default), Carbon Graphite Grey, High-Contrast White, Laboratory Green, Amber Sunset Glow, Violet Nightshade, Quantum Blackhole, Ocean Breeze Blue, Blossoming Rose, Amber Gold
+- **About dialog**: `openAbout()` replaced stub `alert()` with a styled modal card showing system version and framework info
+- **PDF preview modal**: `exportReport()` now opens the generated report inside a `960px` wide modal via `openSystemModalWidened()` instead of a bare `window.open()` blank tab
+- **PDF zoom controls**: Dropdown (`Fit to Page`, `Fit to Width`, `Actual`, `50%`–`200%`) + `Zoom +` / `Zoom -` buttons; `applyIframeScale()` projects transformed iframe dimensions onto a wrapper `div` to maintain a single native scrollbar in the gray preview tray; `fitIframeToWidth()` auto-scales on modal open; `triggerEmbeddedPrint()` calls `contentWindow.print()` so the browser print dialog receives A4 layout instead of the scaled preview
+
+#### Changed — `js/ui/exportManager.js`
+
+- **PDF rendering target**: Switched from `window.open()` + `document.write()` to writing into a sandboxed `<iframe>` inside the preview modal; content and chrome (controls bar, zoom) are separated
+- **Split-media CSS**: Report stylesheet now uses `@media screen` (794 px fixed width for preview) and `@media print` (`@page A4` margins) as separate rules, ensuring the preview and the printed page have independent layout without `@page` affecting the modal chrome
+
+#### Changed — `css/styles.css`
+
+- **Theme-transition readiness**: Added `transition: background-color 0.3s ease, color 0.3s ease` to `body`, `.navbar`, `.card-header`, `.card-body`, `.section-label`, `.radio-item`, `.input-group label`, `.modern-table td`, `.table-container`, `.bottom-bar` so all 10 theme switches animate smoothly instead of snapping
+- Added `--text-inverse` CSS variable; `.nav-brand h1` and `.nav-user` now reference it so text stays legible across light-nav themes (e.g. High-Contrast White)
+- `.user-badge` background changed from hardcoded `#334155` to `rgba(255, 255, 255, 0.2)` for theme neutrality
+- `.bar-left` / `.bar-right` fixed widths removed; wrapped in `.bar-controls-left` to avoid layout shift on theme change
+
+#### Changed — `js/app.js`
+
+- Removed `openSettings()` and `openAbout()` stub functions — implementations moved to `modalManager.js`
+- Removed debug `console.log` calls from `initSplittersAndDrag()`
+
+#### Known Issues Updated
+
+- **KI-003 closed**: Settings panel is now fully implemented via modal system
+- **KI-005 opened** (`Medium`): `exportReport()` references `ths` on line `if (ths.length > 0) tds[ths.length - 1].remove()` — `ths` is not defined in scope; should be `tds`; causes `ReferenceError` when exporting, preventing the delete-button column from being stripped in the PDF state table
 
 ---
 

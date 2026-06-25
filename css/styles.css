@@ -4,6 +4,7 @@
   --card-bg: #ffffff;
   --text-main: #334155;
   --text-muted: #64748b;
+  --text-inverse: #ffffff; 
   --border-color: #cbd5e1;
   --border-dark: #94a3b8;
   
@@ -27,16 +28,17 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* --- Top Navigation --- */
-.navbar { background-color: var(--nav-bg); color: #fff; height: 56px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; flex-shrink: 0; z-index: 10; }
+.navbar { background-color: var(--nav-bg); color: var(--text-inverse); height: 56px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; flex-shrink: 0; z-index: 10; transition: background-color 0.3s ease, color 0.3s ease; }
 .nav-brand { display: flex; align-items: center; gap: 10px; }
 .nav-logo { font-size: 20px; }
-.nav-brand h1 { font-size: 16px; font-weight: 600; letter-spacing: 0.5px; margin: 0; }
+.nav-brand h1 { font-size: 16px; font-weight: 600; letter-spacing: 0.5px; margin: 0; color: var(--text-inverse); }
 
-.nav-user { display: flex; align-items: center; gap: 12px; font-size: 13px; }
-.user-badge { background: #334155; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;}
+.nav-user { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--text-inverse); }
+.user-badge { background: rgba(255, 255, 255, 0.2); padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;}
 .user-name { font-weight: 500; }
 .user-id { color: #94a3b8; }
 
@@ -50,7 +52,7 @@ body {
   overflow: hidden;
 }
 
-/* --- Card Base (Restructured for Glow) --- */
+/* --- Card Base --- */
 .card {
   background: transparent;
   border-radius: var(--radius);
@@ -90,9 +92,10 @@ body {
   user-select: none;
   position: relative;
   z-index: 2; 
+  transition: background-color 0.3s ease;
 }
 .card-header:active { cursor: grabbing; }
-.card-header h2 { font-size: 14px; font-weight: 700; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.5px; margin: 0; pointer-events: none; }
+.card-header h2 { font-size: 14px; font-weight: 700; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.5px; margin: 0; pointer-events: none; transition: color 0.3s ease; }
 
 .header-title { display: flex; align-items: center; gap: 8px; }
 .drag-handle { font-size: 20px; color: #94a3b8; line-height: 1; transition: color 0.2s; }
@@ -109,6 +112,7 @@ body {
   border-radius: 0 0 var(--radius) var(--radius);
   position: relative;
   z-index: 2;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 .card-body.no-padding { padding: 0; }
 .flex-col { flex-direction: column; }
@@ -143,7 +147,6 @@ body {
   to { stroke-dashoffset: 0; }
 }
 
-/* Phase 1: Pressing & Loading */
 .card.long-pressing-loading .card-glow {
   opacity: 1;
 }
@@ -151,7 +154,6 @@ body {
   animation: draw-glow-border 0.3s linear forwards; 
 }
 
-/* Phase 2: Captured & Ready */
 .card.drag-ready {
   transform: scale(0.99);
 }
@@ -164,7 +166,6 @@ body {
   animation: none; 
 }
 
-/* Phase 3: Actively Dragging */
 .card.dragging {
   opacity: 0.6;
   transform: scale(0.98);
@@ -209,37 +210,34 @@ body {
 .form-section { margin-bottom: 24px; display: flex; flex-direction: column; width: 100%; }
 .form-section:last-child { margin-bottom: 0; }
 .table-header-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px; }
-.section-label { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin: 0; }
+.section-label { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin: 0; transition: color 0.3s ease; }
 
 .radio-group { display: flex; gap: 16px; flex-wrap: wrap; }
-.radio-item { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 14px; }
+.radio-item { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 14px; color: var(--text-main); transition: color 0.3s ease; }
 .radio-item input[type="radio"] { accent-color: var(--primary); width: 16px; height: 16px; cursor: pointer; }
 
 .input-row { display: flex; gap: 12px; width: 100%; }
 .input-group { flex: 1; display: flex; flex-direction: column; gap: 6px; }
-.input-group label { font-size: 12px; color: var(--text-muted); }
-.input-group input { width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; transition: all 0.2s; }
+.input-group label { font-size: 12px; color: var(--text-muted); transition: color 0.3s ease; }
+.input-group input { width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; transition: all 0.2s; background-color: #ffffff; color: #0f172a; }
 .input-group input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
 
-/* --- Unified Professional Table Architecture --- */
-.table-container { width: 100%; overflow-y: auto; overflow-x: hidden; border: 2px solid #1e293b; border-radius: 6px; background: var(--card-bg); box-shadow: var(--shadow-sm); }
+/* --- Table Architecture --- */
+.table-container { width: 100%; overflow-y: auto; overflow-x: hidden; border: 2px solid #1e293b; border-radius: 6px; background: var(--card-bg); box-shadow: var(--shadow-sm); transition: border-color 0.3s ease, background-color 0.3s ease; }
 .modern-table { width: 100%; border-collapse: collapse; text-align: center; }
 .modern-table th { background: #1e293b; padding: 12px 8px; font-size: 12px; color: #ffffff; font-weight: 700; border-bottom: 1px solid #1e293b; border-right: 1px solid #334155; position: sticky; top: 0; z-index: 2; text-transform: uppercase; letter-spacing: 1px; }
 .modern-table th:last-child { border-right: none; }
-.modern-table td { padding: 0; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); position: relative; color: var(--text-main); vertical-align: middle; }
+.modern-table td { padding: 0; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); position: relative; color: var(--text-main); vertical-align: middle; transition: color 0.3s ease, border-color 0.3s ease; }
 .modern-table td:last-child { border-right: none; }
 .modern-table tr:last-child td { border-bottom: none; }
 .modern-table tbody tr:nth-child(even) td { background: #f8fafc; }
 
-/* Interactive Input Fields */
-.modern-table td input { width: 100%; height: 38px; border: none; text-align: center; font-size: 15px; font-family: monospace; font-weight: 700; color: var(--text-main); background: transparent; outline: none; transition: background 0.2s; }
+.modern-table td input { width: 100%; height: 38px; border: none; text-align: center; font-size: 15px; font-family: monospace; font-weight: 700; color: var(--text-main); background: transparent; outline: none; transition: background 0.2s, color 0.3s ease; }
 .modern-table td input:hover { background: #f1f5f9; }
 .modern-table td input:focus { background: #fff; box-shadow: inset 0 0 0 2px var(--primary); z-index: 10; position: relative; border-radius: 4px; }
 
-/* Column Width Adjustments */
 .col-action { width: 36px; padding: 0 !important; }
 
-/* --- CSS-Only Origin Cell & Column Label Styling --- */
 .transition-table tbody td:first-child {
     background-color: #f1f5f9;
     border-right: 1px solid #cbd5e1;
@@ -269,7 +267,6 @@ body {
     pointer-events: none;
 }
 
-/* --- Table Controls --- */
 .del-btn { width: 100%; height: 100%; min-height: 38px; border: none; background: transparent; color: #94a3b8; font-size: 16px; cursor: pointer; transition: 0.2s; }
 .del-btn:hover { color: var(--danger); background: #fef2f2; font-weight: bold; }
 
@@ -279,7 +276,7 @@ body {
 .primary-micro { background: #eff6ff; color: var(--primary); border-color: #bfdbfe; }
 .primary-micro:hover { background: #dbeafe; border-color: #93c5fd; }
 
-/* --- Global Buttons --- */
+/* --- Buttons --- */
 .btn { padding: 8px 16px; font-size: 13px; font-weight: 600; border-radius: 6px; cursor: pointer; transition: all 0.2s; border: none; font-family: inherit; }
 .btn-primary { background: var(--primary); color: #fff; box-shadow: var(--shadow-sm); }
 .btn-primary:hover { background: var(--primary-hover); box-shadow: var(--shadow-md); }
@@ -289,7 +286,6 @@ body {
 .btn-ghost:hover { background: #f1f5f9; color: var(--text-main); }
 .btn-large { padding: 10px 32px; font-size: 14px; font-weight: 700; letter-spacing: 0.5px; }
 
-/* --- Dedicated Sub-light Bordered Button Class for Settings/About --- */
 .btn.btn-bordered {
   background-color: #f8fafc;
   color: var(--text-muted);
@@ -307,7 +303,7 @@ body {
   box-shadow: var(--shadow-sm);
 }
 
-/* --- Canvas & Utilities --- */
+/* --- Utilities --- */
 .empty-state { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); text-align: center; line-height: 1.6; }
 .empty-icon { font-size: 32px; margin-bottom: 12px; opacity: 0.5; }
 
@@ -322,10 +318,11 @@ body {
 .circuit-note { padding: 12px 20px; background: #f8fafc; border-top: 1px solid var(--border-color); font-size: 12px; color: var(--text-muted); width: 100%; }
 
 /* --- Footer --- */
-.bottom-bar { background: #ffffff; border-top: 1px solid var(--border-color); height: 70px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; flex-shrink: 0; box-shadow: 0 -4px 6px -1px rgba(0,0,0,0.02); z-index: 10; }
-.bar-left { display: flex; gap: 8px; width: 250px; }
+.bottom-bar { background: #ffffff; border-top: 1px solid var(--border-color); height: 70px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; flex-shrink: 0; box-shadow: 0 -4px 6px -1px rgba(0,0,0,0.02); z-index: 10; transition: background-color 0.3s ease; }
+.bar-left { display: flex; gap: 8px; }
 .bar-center { flex: 1; display: flex; justify-content: center; }
-.bar-right { display: flex; gap: 12px; width: 250px; justify-content: flex-end; }
+.bar-right { display: flex; gap: 12px; justify-content: flex-end; }
+.bar-controls-left { display: flex; gap: 16px; align-items: center; }
 
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }

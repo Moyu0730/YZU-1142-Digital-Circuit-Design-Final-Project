@@ -1,24 +1,10 @@
 'use strict';
 
-function openSettings() { 
-  console.log('[UI] Settings button clicked.');
-  alert('Settings configuration panel will be available in future updates.'); 
-}
-
-function openAbout() {
-  console.log('[UI] About button clicked.');
-  alert('Sequential Circuit Design Automation System\n\nVersion 4.1 (Manual Generation Flow)\nFinal Project – Digital Circuit Design');
-}
-
 function initSplittersAndDrag() {
   const container = document.getElementById('appLayout');
   const gutters = Array.from(document.querySelectorAll('.gutter'));
   const cards = Array.from(document.querySelectorAll('.card'));
 
-  console.log('[INIT] Layout Container:', container.id);
-  console.log('[INIT] Total Panels:', cards.length, '| Total Gutters:', gutters.length);
-
-  // 1. Panel Resizing Engine
   let currentGutter, prevPanel, nextPanel, startX, prevWidth, nextWidth;
 
   gutters.forEach((gutter) => {
@@ -62,7 +48,6 @@ function initSplittersAndDrag() {
     if (window.svgFit) window.svgFit();
   }
 
-  // 2. High-Contrast Progress Glow & Drag Engine
   let draggedCard = null;
 
   cards.forEach(card => {
@@ -148,7 +133,6 @@ function initSplittersAndDrag() {
     card.addEventListener('drop', (e) => {
       e.preventDefault();
       card.classList.remove('drag-over');
-      
       if (draggedCard && draggedCard !== card) {
         reorderPanels(draggedCard, card);
       }
@@ -196,12 +180,12 @@ function initEvents() {
   bind('btnDlSVG', downloadSVG);
   bind('btnDlPNG', downloadPNG);
   
+  // Modal Trigger Event Bindings
   bind('btnSettings', openSettings);
-  bind('btnExport', exportReport);
   bind('btnAbout', openAbout);
+  
+  bind('btnExport', exportReport);
 
-  // Live Binding strictly for table headers X/Z text synchronization, 
-  // without triggering backend equation recalculation until Generate is clicked.
   const inpVarEl = document.getElementById('inputVars');
   const outVarEl = document.getElementById('outputVars');
   const thInp = document.getElementById('thInput');
