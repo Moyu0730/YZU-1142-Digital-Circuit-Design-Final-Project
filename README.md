@@ -6,8 +6,6 @@
 **Author:** Chen Po-Hao (s1131525)
 **Status:** `Active Development`
 
----
-
 ## Table of Contents
 
 - [Overview](#overview)
@@ -22,8 +20,6 @@
 - [Known Issues](#known-issues)
 - [Changelog](#changelog)
 
----
-
 ## Overview
 
 This tool takes a finite state machine (FSM) description as a state table and automatically synthesizes:
@@ -34,8 +30,6 @@ This tool takes a finite state machine (FSM) description as a state table and au
 4. **Printable PDF reports** formatted for academic submission
 
 Supports **Mealy** and **Moore** machine models with **JK**, **T**, and **D** flip-flop types.
-
----
 
 ## Features
 
@@ -51,8 +45,6 @@ Supports **Mealy** and **Moore** machine models with **JK**, **T**, and **D** fl
 | Export | SVG download, PNG (2× quality), full PDF report |
 | No-Install | Runs entirely in-browser, zero dependencies |
 
----
-
 ## Tech Stack
 
 - **Runtime:** Browser (ES6+, no build step)
@@ -62,8 +54,6 @@ Supports **Mealy** and **Moore** machine models with **JK**, **T**, and **D** fl
 - **Export:** `window.print()` with print-optimized CSS
 
 No frameworks. No bundler. No backend.
-
----
 
 ## Architecture
 
@@ -115,8 +105,6 @@ lines
 
 Each signal occupies a dedicated vertical lane at a fixed 24 px Y-interval to avoid routing collisions.
 
----
-
 ## Project Structure
 
 ```
@@ -144,8 +132,6 @@ Each signal occupies a dedicated vertical lane at a fixed 24 px Y-interval to av
         └── exportManager.js     # PDF report & image export
 ```
 
----
-
 ## Getting Started
 
 ### Prerequisites
@@ -164,8 +150,6 @@ open index.html        # macOS
 start index.html       # Windows
 xdg-open index.html   # Linux
 ```
-
----
 
 ## Usage Guide
 
@@ -200,8 +184,6 @@ Click **GENERATE** to run the full synthesis pipeline. Results appear in the mid
 | Export Report | Full HTML/PDF with student header, state table, equations, K-maps, circuit |
 | Download SVG | Vector circuit diagram (scalable) |
 | Download PNG | Rasterized circuit at 2× resolution |
-
----
 
 ## Algorithms
 
@@ -244,8 +226,6 @@ Precedence: NOT (') > AND (·/*) > OR (+)
                    └── C
 ```
 
----
-
 ## Roadmap
 
 - [ ] **Multi-output support** — independent minimization for each output variable
@@ -257,8 +237,6 @@ Precedence: NOT (') > AND (·/*) > OR (+)
 - [ ] **Settings panel** — currently stubbed, activate with saved preferences
 - [ ] **Mobile layout** — responsive breakpoints for tablet/phone
 
----
-
 ## Known Issues
 
 | ID | Severity | Description |
@@ -268,20 +246,14 @@ Precedence: NOT (') > AND (·/*) > OR (+)
 | KI-003 | Low | Settings panel button is wired but shows a placeholder stub |
 | KI-004 | Low | Very large state machines (5+ flip-flops) may produce cluttered SVG diagrams with overlapping routes |
 
----
-
 ## Changelog
 
 All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
----
-
 ### [Unreleased]
 
 > Track planned work here before it is merged.
-
----
 
 ### [1.1.0] — 2025-06-XX
 
@@ -296,8 +268,6 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 #### Improved
 - Separated rendering concerns from core logic (design pattern optimization)
-
----
 
 ### [1.0.0] — 2025-06-XX
 
