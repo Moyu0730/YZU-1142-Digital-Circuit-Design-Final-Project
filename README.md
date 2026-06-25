@@ -255,6 +255,54 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 > Track planned work here before it is merged.
 
+---
+
+### [1.3.0] — 2026-06-25
+
+#### Added — `js/app.js`
+
+- **Panel resize engine**: Drag gutters between panels to resize them freely; enforces 280 px minimum per panel to preserve usability
+- **Panel drag-and-drop reorder**: Long-press (300 ms) on a card header to unlock drag; panels can be repositionally swapped via HTML5 drag-and-drop API; `reorderPanels()` re-inserts DOM nodes with gutters to maintain layout consistency
+- **SVG auto-fit on resize**: `window.resize` now calls `svgFit()` so the circuit diagram rescales when the browser window changes size
+- **Defensive generate binding**: `btnGenerate` now checks `typeof generate === 'function'` before binding to surface load-order errors in the console instead of silently failing
+
+#### Added — `css/styles.css`
+
+- **CSS Design Tokens** (`:root`): Introduced `--bg-color`, `--nav-bg`, `--card-bg`, `--text-main`, `--text-muted`, `--border-color`, `--primary`, `--success`, `--danger`, `--shadow-sm`, `--shadow-md`, `--radius` — all component styles now reference these variables instead of hardcoded hex values
+- **Long-press glow animation engine**: `.card.long-pressing-loading` triggers a red SVG-border draw animation (`draw-glow-border`, 300 ms) that races exactly with the JS press timer; on unlock it snaps to `.drag-ready` which locks the border to stable green; `.dragging` fades the card to 0.6 opacity with a dashed blue outline on the drop target
+
+#### Changed — `css/styles.css` & `index.html`
+
+- **Navbar**: Replaced `.toolbar` + `.info-bar` with `<nav class="navbar">` containing `.nav-brand` (logo + title) and `.nav-user` (student badge, name, ID); student info is now structured HTML instead of inline string
+- **Card system**: Replaced `.panel.panel-left/mid/right` with semantic `<section class="card">` elements sharing uniform `.card-header` / `.card-body` anatomy; panel widths are now flex-driven instead of hardcoded pixel values
+- **Resizable gutters**: Added `<div class="gutter">` between cards; styled with a 4 px drag handle that turns blue on hover/active
+- **Form layout**: Left panel configuration reorganized into numbered `.form-section` blocks; input/output variable fields placed side-by-side in `.input-row`
+- **State table**: Replaced ad-hoc `<table>` styles with `.modern-table` inside `.table-container`; header row uses dark navy background (`#1e293b`) with white uppercase text; cells use monospace font at 15 px; even rows lightly striped
+- **Button system**: Replaced single `.btn` class with `.btn-primary`, `.btn-secondary`, `.btn-ghost`, `.btn-large`, `.btn-micro`; GENERATE button relabeled to **GENERATE CIRCUIT** and promoted to `.btn-large`
+- **Bottom bar**: Replaced `.footer` with `<footer class="bottom-bar">` using a left / center / right three-zone layout; Export button moved to right zone as `.btn-secondary`
+- **Empty states**: Placeholder text in middle and right panels replaced with `.empty-state` components (icon + instructional text)
+- **App title**: Shortened from "Sequential Circuit Design Automation System" to "Sequential Circuit EDA" in the navbar
+
+#### Changed — `js/render/kmapRender.js`
+
+- **Equation table**: Rebuilt with `.modern-table` + `.table-container`; FF input equations displayed in blue (`#2563eb`), output equation highlighted in red (`#ef4444`) with a dedicated `.highlight-row`
+- **State variable display**: Changed separator from double-space to comma; label now rendered as a chip badge
+- **K-map cell styling**: Replaced class-based coloring (`.k1`, `.kdc`, `.k0`) with per-cell inline style via new `getCellHtml()` helper; `1` cells render on `#f0fdf4` green, `X` on `#fffbeb` amber, `0` on transparent
+- **K-map container**: Table uses `position:absolute` inside a fixed-size `div` so the SVG prime-implicant overlay aligns exactly with cell boundaries regardless of browser rendering quirks
+- **Prime implicant colors**: Updated to modern Tailwind-aligned palette (red / blue / emerald / amber / violet / cyan / pink / lime); fill opacity reduced from `26` to `1A` (10 %) for less visual noise
+- **Border color**: K-map borders changed from `#bbb` to `#94a3b8` to match design tokens
+
+#### Changed — `js/ui/exportManager.js`
+
+- **Student info source**: Changed selector from `.info-bar` to `.nav-user` to match new HTML structure
+- **Report color scheme**: All hardcoded legacy colors (`#1a2744`, `#1a7a3a`, `#222`) replaced with new design token values (`#0f172a`, `#2563eb`, `#334155`)
+- **PDF state table**: Wrapped in `.table-container` + `.modern-table` with dark header and even-row striping; `highlight-row` applied to output equation row
+- **Page-break rules**: Added `page-break-after: avoid` to `h2` and `h3` to prevent orphaned section headings; `page-break-inside: avoid` on `.table-container`
+- **Section titles**: "State Table" → "State Transition Table", "Equations & K-Maps" → "Logic Synthesis", "Sequential Circuit Diagram" → "Sequential Circuit Schematic"
+- **Circuit SVG in PDF**: Added `border: 1px solid #cbd5e1` and `border-radius: 4px` for visual framing
+
+---
+
 ### [1.2.0] — 2026-06-25
 
 #### Improved — `circuitRender.js`
