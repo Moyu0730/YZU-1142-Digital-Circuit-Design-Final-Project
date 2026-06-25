@@ -6,7 +6,7 @@
   <title>Sequential Circuit Design Automation System</title>
 
   <!-- CSS — load order: base → layout → components → feature panels -->
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 
@@ -134,7 +134,12 @@
 </div>
 
 <!-- JS — load order: lib → circuit → logic → ui → app -->
-<script src="script.js"></script>
+<script src="js/circuit/logicEngine.js"></script>
+<script src="js/render/kmapRender.js"></script>
+<script src="js/render/circuitRender.js"></script>
+<script src="js/ui/tableManager.js"></script>
+<script src="js/ui/exportManager.js"></script>
+<script src="js/app.js"></script>
 
 </body>
 </html>

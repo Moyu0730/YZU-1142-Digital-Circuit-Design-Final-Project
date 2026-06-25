@@ -263,7 +263,7 @@ function generate() {
   }
 }
 
-// ─── Render Output 1 ─────────────────────────────────────────────────────────
+// ─── Render Output 1 (完美卡片化 K-Map) ────────────────────────────────────────
 
 function renderOutput1({ eqs, groups, ffTT, outTT, ffType, nFF, varNames, states, outVar }) {
   const svNames = varNames.slice(0, nFF).join('  ');
@@ -294,24 +294,31 @@ function renderOutput1({ eqs, groups, ffTT, outTT, ffType, nFF, varNames, states
     <td class="eq-value">${outVar} = ${eqs[outVar] || '0'}</td>
   </tr></tbody></table>`;
 
-  html += `<div class="kmap-section"><div class="kmap-title">K-Map (Example)</div>`;
-  const showKeys = Object.keys(eqs).filter(k => k !== outVar);
-  showKeys.slice(0, 4).forEach(k => {
-    const tt = ffTT[k] || outTT;
-    html += renderKMap(k, tt.ones, tt.dc, varNames, groups[k]) + `
-      <div class="simplified-eq">(Simplified) &nbsp;<span>${k} = ${eqs[k] || '0'}</span></div>
-      <br>`;
-  });
-  html += renderKMap(outVar, outTT.ones, outTT.dc, varNames, groups[outVar]);
-  html += `<div class="simplified-eq">(Simplified) &nbsp;<span>${outVar} = ${eqs[outVar] || '0'}</span></div>`;
-  html += `</div>`;
+  html += `<div class="kmap-title" style="margin-top:15px; font-weight:700; color:#333; font-size:13px;">K-Maps & Groups</div>`;
+  html += `<div class="kmap-section" style="display:flex; flex-wrap:wrap; gap:12px; margin-top:8px;">`;
 
+  const showKeys = Object.keys(eqs).filter(k => k !== outVar);
+  [...showKeys, outVar].forEach(k => {
+    const tt = (k === outVar) ? outTT : ffTT[k];
+    
+    html += `
+      <div class="kmap-item" style="border:1px solid #d8dce8; border-radius:6px; padding:10px; background:#fafbff; display:flex; flex-direction:column; align-items:center; page-break-inside:avoid; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+        <div class="kmap-label" style="align-self:flex-start; font-weight:700; color:#1a2744; margin-bottom:6px; font-size:12px;">${k}</div>
+        ${renderKMap(tt.ones, tt.dc, varNames, groups[k])}
+        <div class="simplified-eq" style="margin-top:8px; margin-bottom:0; background:#f0f4ff; padding:4px 10px; border-radius:4px; font-size:12px; font-weight:700; color:#333; width:100%; text-align:center;">
+          ${k} = <span style="color:#c00;">${eqs[k] || '0'}</span>
+        </div>
+      </div>
+    `;
+  });
+
+  html += `</div>`;
   document.getElementById('output1').innerHTML = html;
 }
 
 // ─── K-map renderer (STRICT Pixel-Perfect Grid) ─────────────────────────────
 
-function renderKMap(name, ones, dc, varNames, groups = []) {
+function renderKMap(ones, dc, varNames, groups = []) {
   const n = varNames.length;
   const onesSet = new Set(ones);
   const dcSet   = new Set(dc);
@@ -330,7 +337,7 @@ function renderKMap(name, ones, dc, varNames, groups = []) {
   const thRow    = `style="width:${HDR_W}px !important; min-width:${HDR_W}px; max-width:${HDR_W}px; height:${CELL_H}px !important; padding:0 !important; text-align:center; vertical-align:middle; border:1px solid #bbb; background:#f0f2f8; color:#444;"`;
   const tdCell   = `style="width:${CELL_W}px !important; min-width:${CELL_W}px; max-width:${CELL_W}px; height:${CELL_H}px !important; padding:0 !important; text-align:center; vertical-align:middle; position:relative; z-index:2; border:1px solid #bbb;"`;
 
-  let t = `<div class="kmap-label">${name}</div><div class="kmap-wrap" style="position:relative; display:inline-block; margin-bottom:6px;">`;
+  let t = `<div class="kmap-wrap" style="position:relative; display:inline-block;">`;
   t += `<table class="kmap-table" style="width:auto !important; margin:0; table-layout:fixed; border-collapse:collapse; position:relative; z-index:2; background:transparent;">`;
 
   if (n === 1) {
@@ -504,7 +511,7 @@ function flatAST(ast) {
 
 // ─── Gate shape drawing (Dynamic Height Scaling) ──────────────────────────────
 
-const GW = 46;
+const GW=46;
 
 function drawGateAND(g, lx, cy, ni, isZ = false) {
   const col = isZ ? '#c00' : '#333';
@@ -555,7 +562,6 @@ function drawGateNOT(g, lx, cy) {
   path.setAttribute('fill','#fff'); path.setAttribute('stroke','#333'); path.setAttribute('stroke-width','1.5');
   g.appendChild(path);
   svgCircle(g, lx+NW+5, cy, 4.5, '#fff', '#333', 1.5);
-  // 輸出點完美卡齊 NOT 閘右端圈圈，無縫銜接
   return {in:{x:lx,y:cy}, out:{x:lx+NW+9.5, y:cy}};
 }
 
@@ -615,54 +621,65 @@ function renderOutput2({ eqs, ffType, nFF, varNames, outVar }) {
   // ── 絕對空間系統 (Absolute Space Allocation) ──
   const BUS_SPACING = 24; 
   const BUS_START_X = 130;
+  const maxSigs = allSigs.length;
   
-  const sigY = {}; // 全域 Y 座標記錄器
+  const sigY = {}; 
   function busX(nm) { return BUS_START_X + allSigs.indexOf(nm) * BUS_SPACING; }
   
-  const MAX_BUS_X = BUS_START_X + (allSigs.length - 1) * BUS_SPACING;
+  const MAX_BUS_X = BUS_START_X + (maxSigs - 1) * BUS_SPACING;
+  const DROP_W = maxSigs * 14; 
   
-  // 數學保證的防重疊空間劃分 (拉寬間距保證美觀)
-  const AND_X       = MAX_BUS_X + 80; 
-  const OR_X        = AND_X + 120; 
-  const FF_INLET    = OR_X + 100; 
-  const FF_X        = FF_INLET + 16; 
+  // 數學保證的防重疊空間劃分
+  const AND_DROP_START = MAX_BUS_X + 40;
+  const AND_IN_X    = AND_DROP_START + DROP_W + 10;
+  const AND_X       = AND_IN_X + 14;
+
+  const OR_DROP_START = AND_X + GW + 80;
+  const OR_IN_X     = OR_DROP_START + DROP_W + 10;
+  const OR_X        = OR_IN_X + 14;
+
+  const FF_DROP_START = OR_X + GW + 60;
+  const FF_INLET    = FF_DROP_START + DROP_W + 10;
+  const FF_X        = FF_INLET + 14;
   const FF_W        = 100, FF_H = 120; 
   const FF_RIGHT    = FF_X + FF_W; 
-  const Z_X         = FF_INLET; 
   
+  const Z_X = FF_INLET; 
+  
+  const FB_ZONE_W = 40 + (nFF * 2) * 16;
+  const SVG_W = Math.max(FF_RIGHT + FB_ZONE_W + 100, Z_X + 160);
+
   const isT = ffType === 'T' || ffType === 'D';
 
   const ffTopY = {};
-  const TOP_MARGIN = 100; 
-  const FF_GAP = 160; // 極度安全的垂直緩衝區
+  const TOP_MARGIN = 120; 
+  // 【關鍵修正】大幅加大 Flip-Flop 之間的間距，讓 AND 閘有足夠空間長出來
+  const FF_GAP = 180; 
   for(let b=nFF-1; b>=0; b--){ 
     ffTopY[b] = TOP_MARGIN + (nFF - 1 - b) * (FF_H + FF_GAP); 
   }
 
   const lastFFBot = ffTopY[0] + FF_H;
-  const Z_Y = lastFFBot + 120; // 獨立的 Z 邏輯區域
-  const fbStartY = Z_Y + 100;
-  const clkY = fbStartY + (nFF * 2) * 16 + 30; // CLK 永遠在最底端
-  const SVG_H = clkY + 40;
+  const Z_Y = lastFFBot + 140; 
+  const clkY = Z_Y + 120;
+  const fbStartY = clkY + 30;
+  
+  const RAW_H = fbStartY + (nFF * 2) * 16 + 20;
 
-  // 動態計算需要多寬的回饋線佈局
-  let fbCount = 0;
-  for (let b = nFF - 1; b >= 0; b--) {
-      if (allSigs.includes(`Q${b}`)) fbCount++;
-      if (allSigs.includes(`Q${b}'`)) fbCount++;
-  }
-  const MAX_FB_X = FF_RIGHT + 24 + fbCount * 16;
-  const SVG_W = Math.max(MAX_FB_X + 60, Z_X + 160);
+  // 加入 40px 的邊距，讓 PNG 下載時絕對置中
+  const PAD = 40;
+  const VIEW_W = SVG_W + PAD * 2;
+  const VIEW_H = RAW_H + PAD * 2;
 
   const svg=mkEl('svg');
   svg.setAttribute('id','circuit-svg');
-  svg.setAttribute('viewBox',`0 0 ${SVG_W} ${SVG_H}`);
-  svg.style.cssText=`width:${SVG_W}px;height:${SVG_H}px;background:#fff;border:1px solid #dde;border-radius:4px;`;
+  svg.setAttribute('viewBox',`${-PAD} ${-PAD} ${VIEW_W} ${VIEW_H}`);
+  svg.style.cssText=`width:100%;height:100%;max-width:${VIEW_W}px;background:#fff;border:1px solid #dde;border-radius:4px;`;
   const root=mkEl('g'); svg.appendChild(root);
   svgText(root,SVG_W/2,20,`${ffType} Flip-Flop Sequential Circuit`,'#333',14,'bold','middle');
 
-  // 1. 繪製輸入 X 與無縫 NOT 閘 (修正兩個 X 標籤)
-  let inputY = 40;
+  // 1. 繪製輸入 X 與無縫 NOT 閘 (修正多餘的標籤與重疊)
+  let inputY = 50;
   inVars.forEach((v) => {
       const col = '#1a7a33';
       const bxV = busX(v);
@@ -674,23 +691,25 @@ function renderOutput2({ eqs, ffType, nFF, varNames, outVar }) {
       if (needComp.has(v)) {
           const vPrime = v + "'";
           const bxVPrime = busX(vPrime);
-          const tapX = 45; 
-          const notY = inputY + 24;
+          const tapX = BUS_START_X - 55; 
+          const yPrime = inputY + 30; // 將 NOT 閘安全錯開下方
+          const NOT_X = tapX + 10;
           
           svgCircle(root, tapX, inputY, 3, col, col, 0);
-          svgLine(root, tapX, inputY, tapX, notY, col, '1.5');
-          svgLine(root, tapX, notY, tapX + 10, notY, col, '1.5');
+          svgLine(root, tapX, inputY, tapX, yPrime, col, '1.5');
+          svgLine(root, tapX, yPrime, NOT_X, yPrime, col, '1.5');
           
-          const g = drawGateNOT(root, tapX + 10, notY);
-          svgLine(root, g.out.x, notY, bxVPrime, notY, col, '1.5');
-          svgCircle(root, bxVPrime, notY, 3, col, col, 0);
+          const g = drawGateNOT(root, NOT_X, yPrime);
+          svgLine(root, g.out.x, yPrime, bxVPrime, yPrime, col, '1.5');
+          svgCircle(root, bxVPrime, yPrime, 3, col, col, 0);
           
           sigY[v] = inputY;
-          sigY[vPrime] = notY;
+          sigY[vPrime] = yPrime;
+          inputY += 70;
       } else {
           sigY[v] = inputY;
+          inputY += 40;
       }
-      inputY += 50;
   });
 
   // 2. 繪製全域垂直主總線軌道
@@ -699,14 +718,11 @@ function renderOutput2({ eqs, ffType, nFF, varNames, outVar }) {
       const isState = stVars.some(v => sig.includes(v));
       const col = isState ? '#1a44cc' : '#1a7a33';
       
-      let topY = 25;
       if (isState) {
-          svgText(root, bx, 20, sig, col, 12, sig.endsWith("'")?'normal':'bold', 'middle');
-      } else {
-          topY = sigY[sig]; // X, X' 的垂直線從他們的切入點開始
+          svgText(root, bx, 26, sig, col, 12, sig.endsWith("'")?'normal':'bold', 'middle');
+          sigY[sig] = 35; 
       }
       
-      // 計算垂直線底端
       let bottomY = fbStartY - 20; 
       if (isState) {
          let fbIdx = 0;
@@ -717,43 +733,50 @@ function renderOutput2({ eqs, ffType, nFF, varNames, outVar }) {
              if (allSigs.includes(`Q${b}'`)) fbIdx++;
          }
       } else {
-         bottomY = Z_Y + 40; // 確保 X 的線夠長可以給 Z 使用
+         bottomY = clkY + 20;
       }
-      svgLine(root, bx, topY, bx, bottomY, col, '1.5');
+      svgLine(root, bx, sigY[sig], bx, bottomY, col, '1.5');
   });
 
-  // 3. 繪製時脈樹 (Clock Tree) - 安全繞過元件下方，絕對不穿透
-  const CLK_TRUNK_X = MAX_BUS_X + 30; 
-  svgLine(root, 20, clkY, CLK_TRUNK_X, clkY, '#aaa', '1.5', '5,3');
-  svgText(root, 12, clkY - 6, 'CLK', '#888', 11, 'bold');
+  // 3. 繪製時脈樹 (Clock Tree) - 安全走廊，絕對不切西瓜
+  const CLK_TRUNK_X = MAX_BUS_X + 35; 
+  svgLine(root, 15, clkY, CLK_TRUNK_X, clkY, '#aaa', '1.5'); 
+  svgText(root, 10, clkY - 6, 'CLK', '#888', 11, 'bold');
   
   const topFF_Bottom = ffTopY[nFF - 1] + FF_H;
-  // 時脈主幹垂直往上接到最高的那顆 FF 底部
-  svgLine(root, CLK_TRUNK_X, clkY, CLK_TRUNK_X, topFF_Bottom + 20, '#aaa', '1.5');
+  // 主幹線往上接
+  svgLine(root, CLK_TRUNK_X, clkY, CLK_TRUNK_X, topFF_Bottom + 70, '#aaa', '1.5');
 
   for (let b = nFF - 1; b >= 0; b--) {
       const bottomY = ffTopY[b] + FF_H;
-      // 橫向分支安全走在元件正下方
-      svgLine(root, CLK_TRUNK_X, bottomY + 20, FF_X + FF_W / 2, bottomY + 20, '#aaa', '1.5');
-      // 垂直接入觸發點
-      svgLine(root, FF_X + FF_W / 2, bottomY + 20, FF_X + FF_W / 2, bottomY, '#aaa', '1.5');
-      svgCircle(root, CLK_TRUNK_X, bottomY + 20, 2.5, '#aaa', '#aaa', 0);
+      const clkRouteY = bottomY + 70; // 絕對安全距離，讓 AND 閘在上面長
+      svgLine(root, CLK_TRUNK_X, clkRouteY, FF_X + FF_W / 2, clkRouteY, '#aaa', '1.5');
+      svgLine(root, FF_X + FF_W / 2, clkRouteY, FF_X + FF_W / 2, bottomY, '#aaa', '1.5');
+      svgCircle(root, CLK_TRUNK_X, clkRouteY, 2.5, '#aaa', '#aaa', 0);
   }
 
-  // 4. 絕對水平拉線繪圖引擎 (純粹從垂直總線拉線，不產生新的下拉線)
-  function createSOPDrawer(isZ) {
+  // 4. 絕對封裝的無重疊 SOP 繪圖引擎
+  function createSOPDrawer(andDrop, orDrop, finalDrop, isZ) {
       return function drawSOP(ast, targetX, targetY) {
-          const wireCol = isZ ? '#c00' : '#333';
-
-          function wireFromBus(nm, gInX, gInY) {
-              const bx = busX(nm);
+          function localBusWire(nm, gInX, gInY, dropType) {
+              const srcY = sigY[nm];
+              const sigIdx = allSigs.indexOf(nm);
+              let dropStart = andDrop;
+              if (dropType === 'or') dropStart = orDrop;
+              if (dropType === 'final') dropStart = finalDrop;
+              
+              // 絕對錯開的垂直下拉線，保證訊號絕不重疊
+              const dropX = dropStart + sigIdx * 14; 
               const isState = stVars.some(v => nm.includes(v));
-              const col = isState ? '#1a44cc' : '#1a7a33';
-              const dotCol = isZ ? '#c00' : col;
+              const dotCol = isState ? (isZ ? '#c00' : '#1a44cc') : (isZ ? '#c00' : '#1a7a33');
+              const wireCol = isZ ? '#c00' : '#444';
 
-              svgCircle(root, bx, gInY, 3, dotCol, dotCol, 0); 
-              svgLine(root, bx, gInY, gInX, gInY, wireCol, '1.5');
+              svgCircle(root, dropX, srcY, 3, dotCol, dotCol, 0); 
+              svgLine(root, dropX, srcY, dropX, gInY, wireCol, '1.5');
+              svgLine(root, dropX, gInY, gInX, gInY, wireCol, '1.5');
           }
+
+          const wireCol = isZ ? '#c00' : '#333';
 
           if (!ast) return;
           if (ast.t === 'c') {
@@ -763,13 +786,13 @@ function renderOutput2({ eqs, ffType, nFF, varNames, outVar }) {
               return;
           }
           if (ast.t === 'v' || (ast.t === 'not' && ast.c[0].t === 'v')) {
-              wireFromBus(leafNm(ast), targetX, targetY);
+              localBusWire(leafNm(ast), targetX, targetY, 'final');
               return;
           }
           if (ast.t === 'and') {
               const g2 = drawGateAND(root, AND_X, targetY, ast.c.length, isZ);
               svgLine(root, g2.out.x, g2.out.y, targetX, targetY, wireCol, '1.5');
-              ast.c.forEach((ch, i) => wireFromBus(leafNm(ch), g2.ins[i].x, g2.ins[i].y));
+              ast.c.forEach((ch, i) => localBusWire(leafNm(ch), g2.ins[i].x, g2.ins[i].y, 'and'));
               return;
           }
           if (ast.t === 'or') {
@@ -778,7 +801,7 @@ function renderOutput2({ eqs, ffType, nFF, varNames, outVar }) {
               const g2 = drawGateOR(root, gox, targetY, ast.c.length, isZ);
               svgLine(root, g2.out.x, g2.out.y, targetX, targetY, wireCol, '1.5');
 
-              const andSpacing = 80; // 絕對安全間距，保證 AND 閘永不重疊
+              const andSpacing = 56; 
               const startY = targetY - (ast.c.length - 1) * andSpacing / 2;
 
               ast.c.forEach((ch, i) => {
@@ -787,9 +810,9 @@ function renderOutput2({ eqs, ffType, nFF, varNames, outVar }) {
                       const andY = startY + i * andSpacing;
                       const ag = drawGateAND(root, AND_X, andY, ch.c.length, isZ);
                       wireTo(root, ag.out.x, ag.out.y, targetIn.x, targetIn.y, i, isZ);
-                      ch.c.forEach((gc, gi) => wireFromBus(leafNm(gc), ag.ins[gi].x, ag.ins[gi].y));
+                      ch.c.forEach((gc, gi) => localBusWire(leafNm(gc), ag.ins[gi].x, ag.ins[gi].y, 'and'));
                   } else {
-                      wireFromBus(leafNm(ch), targetIn.x, targetIn.y);
+                      localBusWire(leafNm(ch), targetIn.x, targetIn.y, 'or');
                   }
               });
           }
@@ -798,14 +821,14 @@ function renderOutput2({ eqs, ffType, nFF, varNames, outVar }) {
 
   function leafNm(a){ return a.t==='v'?a.v:(a.t==='not'&&a.c[0].t==='v')?a.c[0].v+"'":''; }
 
-  // 5. 繪製 Flip-Flop 與引腳組合邏輯 (T/D 完美居中，JK 完美對稱)
+  // 5. 繪製 Flip-Flop 與引腳組合邏輯 (T/D 完美居中，JK 安全錯開)
   for (let b = nFF - 1; b >= 0; b--) {
       drawFFBox(root, FF_X, ffTopY[b], FF_W, FF_H, b, ffType);
       
       const pins = ffType === 'JK' ? [`J${b}`, `K${b}`] : [ffType === 'T' ? `T${b}` : `D${b}`];
       pins.forEach((pin, i) => {
-          const py = isT ? ffTopY[b] + FF_H/2 : (i === 0 ? ffTopY[b] + 30 : ffTopY[b] + 90);
-          const drawLogic = createSOPDrawer(false);
+          const py = isT ? ffTopY[b] + FF_H/2 : (i === 0 ? ffTopY[b] + 35 : ffTopY[b] + 105);
+          const drawLogic = createSOPDrawer(AND_DROP_START, OR_DROP_START, FF_DROP_START, false);
           drawLogic(parsed[pin], FF_INLET, py);
       });
   }
@@ -813,15 +836,15 @@ function renderOutput2({ eqs, ffType, nFF, varNames, outVar }) {
   // 6. 繪製 Output Z 邏輯
   const outAST = parsed[outVar];
   if (outAST) {
-      const zDrawSOP = createSOPDrawer(true);
+      const zDrawSOP = createSOPDrawer(AND_DROP_START, OR_DROP_START, FF_DROP_START, true);
       if (outAST.t === 'c') {
           svgText(root, Z_X - 10, Z_Y + 4, outAST.v === 1 ? '1' : '0', '#c00', 12, 'bold');
-          svgLine(root, Z_X, Z_Y, Z_X + 40, Z_Y, '#c00', '2');
-          svgText(root, Z_X + 46, Z_Y + 5, `→ ${outVar}`, '#c00', 14, 'bold');
+          svgLine(root, Z_X, Z_Y, Z_X + 24, Z_Y, '#c00', '2');
+          svgText(root, Z_X + 30, Z_Y + 5, `→ ${outVar}`, '#c00', 14, 'bold');
       } else {
           zDrawSOP(outAST, Z_X, Z_Y);
-          svgLine(root, Z_X, Z_Y, Z_X + 40, Z_Y, '#c00', '2');
-          svgText(root, Z_X + 46, Z_Y + 5, `→ ${outVar}`, '#c00', 14, 'bold');
+          svgLine(root, Z_X, Z_Y, Z_X + 24, Z_Y, '#c00', '2');
+          svgText(root, Z_X + 30, Z_Y + 5, `→ ${outVar}`, '#c00', 14, 'bold');
       }
   }
 
@@ -829,8 +852,8 @@ function renderOutput2({ eqs, ffType, nFF, varNames, outVar }) {
   let fbIdx = 0;
   for (let b = nFF - 1; b >= 0; b--) {
       const fy = ffTopY[b];
-      const qy = isT ? fy + FF_H/2 - 24 : fy + 30;
-      const qpy = isT ? fy + FF_H/2 + 24 : fy + 90;
+      const qy = isT ? fy + FF_H/2 - 20 : fy + 35;
+      const qpy = isT ? fy + FF_H/2 + 20 : fy + 105;
       
       svgText(root, FF_RIGHT + 8, qy - 6, `Q${b}`, '#1a7a3a', 11, 'bold');
       if (needComp.has(`Q${b}`)) svgText(root, FF_RIGHT + 8, qpy - 6, `Q${b}'`, '#1a7a3a', 11, 'bold');
@@ -908,14 +931,14 @@ function drawFFBox(g, x, y, w, h, bitNum, ffType) {
   const pins = ffType === 'JK' ? ['J','K'] : [ffType];
   
   pins.forEach((pin, i) => {
-    // 居中對稱處理
-    const py = isT ? y + h/2 : (i === 0 ? y + 30 : y + 90);
+    // 居中處理
+    const py = isT ? y + h/2 : (i === 0 ? y + 35 : y + 105);
     svgText(g, x+6, py+4, pin, '#333', 11, 'bold');
     svgLine(g, x-14, py, x, py, '#333', '1.5');
   });
 
-  const qY = isT ? y + h/2 - 24 : y + 30;
-  const qpY = isT ? y + h/2 + 24 : y + 90;
+  const qY = isT ? y + h/2 - 20 : y + 35;
+  const qpY = isT ? y + h/2 + 20 : y + 105;
 
   svgText(g, x+w-6, qY+4, 'Q',  '#333', 10, 'bold',   'end');
   svgText(g, x+w-6, qpY+4, "Q'", '#333', 10, 'normal', 'end');
@@ -924,7 +947,6 @@ function drawFFBox(g, x, y, w, h, bitNum, ffType) {
 
   const tx = x + w*0.5;
   const tri = mkEl('polygon');
-  // 空心專業三角形時脈引腳
   tri.setAttribute('points', `${tx-6},${y+h} ${tx+6},${y+h} ${tx},${y+h-8}`);
   tri.setAttribute('fill', 'none');
   tri.setAttribute('stroke', '#333');
@@ -937,39 +959,27 @@ function drawFFBox(g, x, y, w, h, bitNum, ffType) {
 function downloadSVG() {
   const s = document.getElementById('circuit-svg');
   if (!s) return alert('Generate the circuit first.');
-  
-  // 複製一份 SVG 並強制設定絕對寬高，避免被瀏覽器視窗大小裁切
-  const clone = s.cloneNode(true);
-  const vb = s.viewBox.baseVal;
-  clone.setAttribute('width', vb.width);
-  clone.setAttribute('height', vb.height);
-
-  const blob = new Blob([new XMLSerializer().serializeToString(clone)], { type:'image/svg+xml;charset=utf-8' });
+  const blob = new Blob([new XMLSerializer().serializeToString(s)], { type:'image/svg+xml' });
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob); 
-  a.download = 'circuit.svg'; 
-  a.click();
+  a.href = URL.createObjectURL(blob); a.download = 'circuit.svg'; a.click();
 }
 
 function downloadPNG() {
   const s = document.getElementById('circuit-svg');
   if (!s) return alert('Generate the circuit first.');
-
   const vb = s.viewBox.baseVal;
   const w = vb.width;
   const h = vb.height;
-  const scale = 2; // 2 倍縮放，確保匯出的 PNG 擁有 Retina 高畫質
+  const scale = 2;
 
   const canvas = document.createElement('canvas');
   canvas.width = w * scale;
   canvas.height = h * scale;
   const ctx = canvas.getContext('2d');
 
-  // 填上純白背景，避免 PNG 透明背景在某些看圖軟體裡變成全黑
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // 複製一份 SVG 並強制給予明確的 width 與 height 屬性，這是解決截圖被「卡斷 / 裁切」的關鍵！
   const clone = s.cloneNode(true);
   clone.setAttribute('width', w);
   clone.setAttribute('height', h);
@@ -988,17 +998,10 @@ function downloadPNG() {
     }, 'image/png', 1.0); 
   };
   
-  // 使用 btoa(unescape(encodeURIComponent())) 來確保中文字或特殊符號 (如 →) 不會變成亂碼
   img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(xml)));
 }
 
-// ─── Stubs ────────────────────────────────────────────────────────────────────
-
-// ─── Stubs ────────────────────────────────────────────────────────────────────
-
-// ─── Export Report (產生完整 PDF 報告 - 橫向雙欄緊湊版) ───────────────────────────────────
-
-// ─── Export Report (產生完整 PDF 報告 - 橫向雙欄緊湊版) ───────────────────────────────────
+// ─── Export Report (產生完整 PDF 報告 - 垂直滿版不斷頁) ───────────────────────────────────
 
 function exportReport() {
   const s = document.getElementById('circuit-svg');
@@ -1040,7 +1043,7 @@ function exportReport() {
   // 4. 取得 SVG HTML
   const svgHtml = s.outerHTML;
 
-  // 5. 組合列印用的 HTML 報告 (雙欄緊湊設計)
+  // 5. 組合列印用的 HTML 報告 (垂直滿版，不斷頁)
   const reportHTML = `
     <!DOCTYPE html>
     <html lang="en">
@@ -1048,20 +1051,20 @@ function exportReport() {
       <meta charset="UTF-8">
       <title>Sequential Circuit Design Report</title>
       <style>
-        /* 報告專屬列印排版 - 橫向 A4 設定 */
+        /* 報告專屬列印排版 - 垂直 A4，固定間距 */
         @page { 
-          size: A4 landscape; 
-          margin: 12mm 15mm; 
+          size: A4 portrait; 
+          margin: 15mm 15mm; 
         }
 
-        /* 確保所有元素都不會超出邊界 */
+        /* 確保所有元素都不會超出或內縮 */
         *, *::before, *::after { box-sizing: border-box; }
 
         body { 
           font-family: 'Segoe UI', Arial, sans-serif; 
           padding: 0; margin: 0; color: #222; 
           line-height: 1.4; background: #fff; 
-          width: 100%; max-width: 100%;
+          width: 100%; 
         }
         
         .header { 
@@ -1071,56 +1074,38 @@ function exportReport() {
         }
         .header h1 { margin: 0; font-size: 20px; color: #1a2744; }
         .student-info { font-size: 13px; color: #555; white-space: nowrap; }
+        .student-info * { color: #1a2744 !important; font-weight: bold; }
         
         h2 { 
-          color: #1a7a3a; margin-top: 0; border-bottom: 1px solid #ddd; 
+          color: #1a7a3a; margin-top: 15px; border-bottom: 1px solid #ddd; 
           padding-bottom: 4px; margin-bottom: 10px; font-size: 16px; 
+          width: 100%;
         }
         
         .info-section { 
-          display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; 
+          display: flex; justify-content: space-between; margin-bottom: 15px; 
           font-size: 13px; background: #f8f9fa; padding: 10px 20px; 
           border-radius: 6px; border: 1px solid #e0e4ef; width: 100%;
+          -webkit-print-color-adjust: exact; print-color-adjust: exact;
         }
         .info-section p { margin: 0; }
         .info-section strong { color: #555; margin-right: 4px; }
         
-        /* 雙欄佈局：左邊表格、右邊卡諾圖 */
-        .layout-row {
-          display: flex; gap: 20px; align-items: flex-start;
-          width: 100%; margin-bottom: 15px;
+        /* 表格樣式：強制繪製所有框線 */
+        table { 
+          border-collapse: collapse; width: 100%; font-size: 12px; margin-bottom: 10px; 
+          border: 1.5px solid #333 !important; 
         }
-        .col-left { width: 30%; min-width: 250px; }
-        .col-right { width: 70%; flex-grow: 1; }
-
-        /* 表格樣式 */
-        table { border-collapse: collapse; width: 100%; font-size: 12px; margin-bottom: 10px; }
-        th, td { border: 1px solid #888; padding: 6px 8px; text-align: center; }
-        th { background-color: #f0f2f8; color: #333; font-weight: 600; }
-        
-        /* 電路圖防斷頁區塊 */
-        .circuit-section {
-          page-break-inside: avoid;
-          margin-top: 10px;
-          width: 100%;
-        }
-        .svg-wrap { 
-          text-align: center; margin-top: 10px; width: 100%; 
-          display: flex; justify-content: center; 
-        }
-        /* 列印時限制 SVG 最大高度，防爆板 */
-        svg { 
-          max-width: 100%; max-height: 125mm; 
-          border: none !important; 
-        }
+        th, td { border: 1px solid #555 !important; padding: 6px 8px; text-align: center; }
+        th { background-color: #f0f2f8 !important; color: #333; font-weight: 600; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         
         /* 隱藏網頁版 UI 專屬元素 */
         .placeholder, .sec-label { display: none !important; }
         .out1-subtitle { display: none !important; }
-        .state-vars { margin-bottom: 10px; font-weight: bold; color: #444; font-size: 12px; }
+        .state-vars { margin-bottom: 10px; font-weight: bold; color: #444; font-size: 12px; width: 100%; }
         
-        /* K-Map 獨立卡片，防斷頁，移除不必要的陰影 */
-        .kmap-section { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 5px; }
+        /* K-Map 獨立卡片，填滿版寬 */
+        .kmap-section { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; margin-top: 5px; width: 100%; }
         .kmap-item { 
           border: 1px solid #aaa !important; 
           padding: 8px !important; 
@@ -1129,14 +1114,31 @@ function exportReport() {
           box-shadow: none !important;
           display: flex; flex-direction: column; align-items: center; 
           page-break-inside: avoid;
+          flex-grow: 1; /* 讓卡諾圖卡片自動延展對齊左右邊界 */
         }
         .kmap-item .kmap-label { font-weight: 700; color: #000 !important; font-size: 13px; align-self: flex-start; margin-bottom: 4px; }
+        .kmap-table { width: auto !important; margin: 0 auto; }
+        
         .simplified-eq { 
           font-size: 12px; color: #333; margin-top: 6px; margin-bottom: 0; 
           padding: 4px 8px; background: transparent !important; 
           border-top: 1px dashed #ccc; width: 100%; text-align: center; 
         }
         .simplified-eq span { color: #c00 !important; font-size: 14px; margin-left: 5px; }
+
+        /* 電路圖區塊 */
+        .circuit-section {
+          margin-top: 10px;
+          width: 100%;
+        }
+        .svg-wrap { 
+          text-align: center; margin-top: 10px; width: 100%; 
+        }
+        /* 強制電路圖寬度 100% 貼齊左右 */
+        svg { 
+          width: 100% !important; height: auto !important; 
+          border: none !important; 
+        }
       </style>
     </head>
     <body>
@@ -1152,16 +1154,11 @@ function exportReport() {
         <p><strong>Output:</strong> ${outputVars}</p>
       </div>
 
-      <div class="layout-row">
-        <div class="col-left">
-          <h2>1. State Table</h2>
-          ${cleanTableHtml}
-        </div>
-        <div class="col-right">
-          <h2>2. Equations & K-Maps</h2>
-          ${out1Html}
-        </div>
-      </div>
+      <h2>1. State Table</h2>
+      ${cleanTableHtml}
+
+      <h2>2. Equations & K-Maps</h2>
+      ${out1Html}
 
       <div class="circuit-section">
         <h2>3. Sequential Circuit Diagram</h2>
@@ -1182,6 +1179,13 @@ function exportReport() {
     printWin.focus();
     printWin.print();
   }, 500);
+}
+
+// ─── Stubs ────────────────────────────────────────────────────────────────────
+
+function openSettings() { alert('Settings – coming soon!'); }
+function openAbout() {
+  alert('Sequential Circuit Design Automation System\n\nVersion 1.0\nFinal Project – Digital Circuit Design\n114-2 Semester');
 }
 
 // ─── Init (Global Event Binding) ──────────────────────────────────────────────
