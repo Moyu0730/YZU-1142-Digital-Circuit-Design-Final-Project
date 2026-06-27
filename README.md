@@ -258,6 +258,29 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+### [1.8.0] — 2026-06-28
+
+#### Changed — `index.html`
+
+- **Product name standardized**: `<title>` and navbar `<h1>` updated from `Sequential Circuit EDA` to `Sequential Circuit Design Automation System` across the full document
+- **Nav logo**: `⚡` emoji replaced with an inline SVG IC chip icon (22×22, `stroke="currentColor"`) — inherits theme color via CSS `currentColor`, scales cleanly at all resolutions
+
+#### Changed — `css/styles.css`
+
+- **`.nav-logo`**: Changed from `font-size: 20px` to `display: flex; align-items: center; color: var(--text-inverse)` so the SVG icon vertically centers with the `<h1>` text and picks up the correct theme color
+
+#### Changed — `js/ui/modalManager.js` — About modal complete redesign
+
+- **Modal widened**: `openAboutModal()` now calls `openSystemModalWidened()` for a two-column layout; title changed to `System Information`
+- **Hero section**: Centered chip SVG icon in a frosted card, product title at `font-size: 20px font-weight: 800`, animated green pulse status badge showing `v2.4.0 | Academic Build`
+- **Action button row**: Three link buttons — GitHub Repository, Contact Email (`s1131525@mail.yzu.edu.tw`), and System Documentation — rendered as `.btn` elements with SVG icons
+- **Developer profile card** (left column): Clickable GitHub profile link (`@Moyu0730`); avatar loaded from `img/avatar.png` with fallback initial `C`; displays full name `Chen Po-Hao`, major, institution `Yuan Ze Univ.`, and student ID `S1131525` in monospace primary-color tag; hover lift animation via inline `onmouseover`
+- **Architecture specs card** (right column): Five color-coded spec rows (Quine-McCluskey FSM Engine, K-map Synthesis, SVG Canvas Auto-Routing, PDF Exporter, Vanilla JS & CSS3 Layout) each preceded by a 4×14px accent color pill
+- **Footer**: Flex layout — `Spring 2026 · Digital Circuit Design Final Project` left-aligned, `Close` button right-aligned
+- **Settings footer fix**: Buttons wrapped in `display: flex; justify-content: flex-end` container for correct right-alignment across all modal widths
+
+---
+
 ### [1.7.0] — 2026-06-26
 
 #### Changed — `css/styles.css` (theme system architecture)
