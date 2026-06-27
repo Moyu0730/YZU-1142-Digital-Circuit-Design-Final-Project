@@ -258,6 +258,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+### [2.0.0] — 2026-06-28
+
+#### Changed — `System Documentation.docx`
+
+- **Title updated**: Added course code prefix `EEA112　` to the document cover title
+- **Terminology standardized**: Chinese colloquial terms replaced with English technical equivalents throughout — `觸發器` → `Flip-Flop`, `AND 閘` → `AND Gate`, `卡諾圖 (括號)` → `Coverage Chart`, `真值表` → `Truth Table`
+- **Architecture diagram removed**: ASCII module-tree block (`[Web UI Browser Layout] → app.js → ...`) removed from Section 2 — superseded by the prose module descriptions that follow
+- **Section 2 prose updates**: Module descriptions reworded to match renamed identifiers; `三欄式彈性盒子（Draggable Flex-box）` simplified; Flip-Flop excitation description tightened
+- **New Section 3 — 完整製作與開發流程**: Five-phase development chronicle added:
+  - *Phase 1*: Requirements analysis, Excitation Table design, and QM Algorithm implementation
+  - *Phase 2*: Netlist partitioning, hierarchical geometric placement, and auto-routing R&D
+  - *Phase 3*: Geometric radar, AST inverse equation analysis, and interactive tooltip implementation
+  - *Phase 4*: Text mask rendering optimization, MutationObserver DOM reflow, and layout-break prevention
+  - *Phase 5*: Deep-clone export optimization, UI refactoring, and GitHub Pages deployment
+- **Section numbering shifted**: Former Section 3 (Technical Challenges) renumbered to Section 4; former Section 4 (Testing) renumbered to Section 5
+- **Section 4/5 prose cleanup**: Minor rewording for terminology consistency with the rest of the document
+
+---
+
 ### [1.9.1] — 2026-06-28
 
 #### Fixed — `js/ui/modalManager.js`

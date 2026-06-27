@@ -308,7 +308,7 @@ function openAboutModal() {
                 <h2 style="font-size: 20px; font-weight: 800; color: var(--text-main); margin: 0 0 10px 0; letter-spacing: 0.5px; line-height: 1.3;">Sequential Circuit Design Automation System</h2>
                 <div style="display: inline-flex; align-items: center; gap: 8px; padding: 4px 14px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 20px; font-size: 12px; font-weight: 700; color: var(--text-muted);">
                     <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--success); box-shadow: 0 0 8px var(--success);"></span>
-                    v1.9.1 &nbsp;|&nbsp; Academic Build
+                    v2.0.0 &nbsp;|&nbsp; Academic Build
                 </div>
             </div>
 
