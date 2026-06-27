@@ -258,6 +258,43 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+### [1.9.0] — 2026-06-28
+
+#### Changed — `js/app.js`
+
+- **Architecture comments added**: File-level header explains load-order dependency and two-engine bootstrap; `initSplittersAndDrag()` documents the 300 ms long-press threshold, 280 px minimum width enforcement, transparent ghost image trick, and `reorderPanels()` gutter re-threading; `initEvents()` documents `bindSafe()` type-check pattern and live header sync
+
+#### Changed — `js/circuit/logicEngine.js`
+
+- **Algorithm comments added**: `parseBool()` documents tokenizer loop, implicit AND insertion rule, and recursive-descent dispatch; `flatAST()` documents n-ary flattening for SVG gate drawing; `qm()` documents all five Quine-McCluskey steps (group by Hamming weight → merge → prime implicant extraction → essential selection → greedy cover); `exciteJK/T/D()` documents the `-1 = don't-care` convention; `generate()` documents the full 5-step synthesis pipeline; `lastResult` documented as module-level cache for cross-module access
+
+#### Changed — `js/render/kmapRender.js`
+
+- **Rendering strategy comments added**: File header documents dependency on `logicEngine.js` and output target `#output1`; `renderOutput1()` documents blue/red color coding for FF vs output equations; `renderKMap()` documents Gray code column/row ordering and the absolute-positioned transparent SVG overlay technique for prime implicant loop drawing; `getCornerHtml()` documents diagonal divider for textbook-style corner cell; `getSegments()` documents wrap-around pair detection logic
+
+#### Changed — `js/ui/tableManager.js`
+
+- **DOM-only pattern documented**: File header notes the absence of a data store; `addRow()` documents placeholder `-` default; `loadExample()` documents why all controls reset (clean first-run guarantee); `getTableData()` documents uppercase normalization and PS/NS filter
+
+#### Changed — `js/render/circuitRender.js`
+
+- **Zone layout and drawing primitives documented**: File header names all 5 layout zones (input bus → NOT → AND → OR → FF); zone constants (`BUS_SPACING`, `BUS_START_X`, `AND_X`, `OR_X`, `FF_INLET`, `FF_GAP`) documented at definition; `mkEl()` documented as SVG namespace shortcut; `drawGateAND/OR()` documents `isZ=true` red wire for output path; `wireTo()` documents 3-segment L-shaped path and per-index elbow offset strategy; `drawFFBox()` documents clock triangle convention; `createSOPDrawer()` documents closure pattern and the four expression forms (constant / single variable / AND product / OR sum); `leafNm()` documents complement prime notation
+
+#### Changed — `js/ui/circuitInteraction.js`
+
+- **Three-engine architecture documented**: File header names the three independent engines (Vector Zoom, Text Mask, Tooltip); `applyCanvasZoom()` documents `data-base-width/height` caching strategy and `!important` override rationale; `applyTextBackgroundMasks()` documents `getBBox()` usage, `data-masked` idempotency guard, and DOM reorder for render-order z-index; `identifyComponentByGeometry()` documents 5-level heuristic priority chain (text content → rect near FF label → nearby text → polygon/circle → wire fallback); `findNearestPortLabel()` documents left-side penalty (+10 000 to right-side distances); `generateTooltipHTML()` documents per-type rendering logic and characteristic equation derivation; `findNearestStateLabel()` documents `Q\d+` regex filter; `parseEquationsFromUI()` documents DOM scraping from `#output1` table; `highlight()` documents regex color substitutions for operators
+
+#### Changed — `js/ui/exportManager.js`
+
+- **Export path and zoom engine documented**: File header names three export paths (SVG, PNG, PDF); `downloadSVG()` and `downloadPNG()` document why zoom inline styles are stripped before serialization; `downloadPNG()` documents 2× Canvas rasterization pipeline; `exportReport()` documents state table clone/sanitize strategy and reportHTML A4 document structure; `applyIframeScale()` documents wrapper resize approach for correct scroll behavior; `onZoomMenuChange()`, `fitIframeToContainer()`, `fitIframeToWidth()`, `adjustIframeZoom()`, `triggerEmbeddedPrint()` all documented
+
+#### Changed — `js/ui/modalManager.js`
+
+- **Function-level comments added**: All 8 public functions (`ensureModalDOM`, `openSystemModal`, `openSystemModalWidened`, `closeSystemModal`, `openSettingsModal`, `selectThemeSwatch`, `saveSystemPreferencesConfigs`, `openAboutModal`) received one-line WHY-focused comments explaining the non-obvious architectural decisions (lazy DOM injection, class reset on reopen, two-phase theme apply, avatar fallback pattern)
+- **Task-note comments removed**: `// Ensure buttons remain right-aligned for settings` and `// >>> FIX: Center-aligned the text vertically with the button using Flexbox <<<` removed; multi-line JSDoc block on `openAboutModal` replaced with a concise single-line comment
+
+---
+
 ### [1.8.0] — 2026-06-28
 
 #### Changed — `index.html`

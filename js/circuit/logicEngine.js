@@ -1,15 +1,23 @@
 'use strict';
 
+// Stores the most recent generate() result so other modules (exportManager,
+// circuitInteraction) can access equations and metadata without re-running.
 let lastResult = null;
 
 // =========================================================
 // 1. BOOLEAN EXPRESSION PARSER (AST GENERATOR)
 // =========================================================
+
+// Parses a Boolean expression string into an Abstract Syntax Tree (AST).
+// Supports variables (A-Z, a-z, 0-9, _), operators +, ·, *, ', parentheses,
+// and implicit AND (adjacent terms without an explicit operator).
+// Returns an AST node: { t:'c'|'v'|'and'|'or'|'not', v?, c? }
 function parseBool(str) {
   str = (str || '').trim();
   if (!str || str === '0') return { t: 'c', v: 0 };
   if (str === '1')         return { t: 'c', v: 1 };
 
+  // Tokenize: emit OR, AND, NOT, parentheses, and variable objects
   const raw = [];
   for (let i = 0; i < str.length; ) {
     const c = str[i];
@@ -19,11 +27,13 @@ function parseBool(str) {
     else if (c === "'") { raw.push('NOT'); i++; }
     else if (c === '(') { raw.push('('); i++; }
     else if (c === ')') { raw.push(')'); i++; }
-    else if (/[A-Za-z0-9_]/.test(c)) { 
+    else if (/[A-Za-z0-9_]/.test(c)) {
       let v = ''; while (i < str.length && /[A-Za-z0-9_]/.test(str[i])) v += str[i++];
       raw.push({ v });
     } else i++;
   }
+
+  // Insert implicit AND tokens between adjacent operands (e.g. "AB" → "A AND B")
   const toks = [];
   raw.forEach((t, i) => {
     toks.push(t);
@@ -35,6 +45,7 @@ function parseBool(str) {
     }
   });
 
+  // Recursive descent parser: OR > AND > NOT > PRIMARY
   let p = 0;
   const pk = () => toks[p];
   const nt = () => toks[p++];
@@ -56,6 +67,9 @@ function parseBool(str) {
   return eOR();
 }
 
+// Flattens nested AND/OR nodes with the same type into a single n-ary node.
+// e.g. or(or(A,B),C) → or(A,B,C). Required before SVG gate drawing so each
+// gate gets the correct number of inputs.
 function flatAST(ast) {
   if (!ast) return {t:'c',v:0};
   if (ast.t==='and'||ast.t==='or') {
@@ -70,10 +84,18 @@ function flatAST(ast) {
 // =========================================================
 // 2. QUINE-MCCLUSKEY ALGORITHM ENGINE
 // =========================================================
+
+// Counts the number of 1-bits in n (used to group minterms by Hamming weight).
 function popcount(n) {
   let c = 0; while (n) { c += n & 1; n >>>= 1; } return c;
 }
 
+// Minimizes a Boolean function using the Quine-McCluskey tabular method.
+//   minterms   — row indices where the function output is 1
+//   dontcares  — row indices that can be treated as either 0 or 1
+//   nVars      — number of input variables (determines table width)
+//   names      — variable name array ordered MSB→LSB (e.g. ['Q1','Q0','X'])
+// Returns { eq: string, groups: prime implicant array }.
 function qm(minterms, dontcares, nVars, names) {
   if (minterms.length === 0) return { eq: '0', groups: [] };
   const all = (1 << nVars) - 1;
@@ -86,6 +108,9 @@ function qm(minterms, dontcares, nVars, names) {
   allTerms.forEach(t => { const k = popcount(t.bits); (grouped[k] = grouped[k] || []).push(t); });
 
   const primes = [];
+
+  // Iteratively combine adjacent groups that differ by exactly one bit,
+  // collecting terms that cannot be combined further as prime implicants.
   function combine(groups) {
     const next = {}; let changed = false;
     const keys = Object.keys(groups).map(Number).sort((a, b) => a - b);
@@ -109,6 +134,8 @@ function qm(minterms, dontcares, nVars, names) {
   }
   combine(grouped);
 
+  // Essential prime implicant selection: greedily pick the PI covering the
+  // most uncovered minterms until all minterms are covered.
   const covers = {};
   minterms.forEach(m => { covers[m] = []; });
   primes.forEach((pi, i) => {
@@ -142,6 +169,7 @@ function qm(minterms, dontcares, nVars, names) {
     if (best >= 0) cover(best);
   });
 
+  // Convert a prime implicant back to a product term string (e.g. "Q1 · X'")
   function piToStr(pi) {
     const parts = [];
     for (let i = nVars - 1; i >= 0; i--) {
@@ -160,6 +188,9 @@ function qm(minterms, dontcares, nVars, names) {
 // =========================================================
 // 3. FLIP-FLOP EXCITATION TABLES
 // =========================================================
+
+// Maps present state (q) and next state (qn) to the required FF input values.
+// -1 denotes a don't-care condition used to expand the QM don't-care set.
 function exciteJK(q, qn) {
   if (q === 0 && qn === 0) return { J: 0, K: -1 };
   if (q === 0 && qn === 1) return { J: 1, K: -1 };
@@ -172,6 +203,13 @@ function exciteD(q, qn)  { return { D: qn }; }
 // =========================================================
 // 4. MAIN GENERATION CONTROLLER
 // =========================================================
+
+// Orchestrates the full synthesis pipeline:
+//   1. Read state table rows from the DOM
+//   2. Assign binary state codes and enumerate truth-table rows
+//   3. Compute FF excitation values and apply Quine-McCluskey minimization
+//   4. Route output equation through either Mealy or Moore logic
+//   5. Store result in lastResult and trigger both render passes
 function generate() {
   try {
     const rows = getTableData();
@@ -179,7 +217,7 @@ function generate() {
 
     const ffType = document.querySelector('input[name=fftype]:checked').value;
     const model  = document.querySelector('input[name=model]:checked').value;
-    
+
     const outVar = (document.getElementById('outputVars').value.trim() || 'Z').split(',')[0].trim();
     const inVar  = (document.getElementById('inputVars').value.trim() || 'X').split(',')[0].trim();
 
@@ -188,17 +226,17 @@ function generate() {
     const code   = {};
     states.forEach((s, i) => { code[s] = i; });
 
-    // Isolate pure state variables for Moore calculations
+    // State variable names Q(n-1)...Q0; inVar is appended for Mealy calculations
     const stateVarNames = [];
     for (let b = nFF - 1; b >= 0; b--) stateVarNames.push(`Q${b}`);
-    
+
     const varNames = [...stateVarNames];
     varNames.push(inVar);
     const nVars = nFF + 1;
 
     const ffTT = {};
-    const outTT = { ones: [], dc: [] };         // Mealy model storage
-    const outTT_moore = { ones: [], dc: [] };   // Moore model storage
+    const outTT = { ones: [], dc: [] };        // Mealy: Z depends on state + input
+    const outTT_moore = { ones: [], dc: [] };  // Moore: Z depends on state only
 
     const mkFF = (prefix, bit) => {
       const keys = ffType === 'JK' ? [`J${bit}`, `K${bit}`]
@@ -219,6 +257,7 @@ function generate() {
       const xVal = parseInt(row.x) || 0;
       if (ps === undefined || ns === undefined) return;
 
+      // Row index encodes state bits in upper bits and input in LSB
       const idx = (ps << 1) | (xVal & 1);
       seen.add(idx);
 
@@ -235,43 +274,42 @@ function generate() {
           if (exciteD(q,qn).D === 1) ffTT[`D${b}`].ones.push(idx);
         }
       }
-      
+
       const zVal = parseInt(row.z) || 0;
-      
-      // Compute for Mealy (Z dependent on State + Input)
+
+      // Mealy: output depends on both current state and current input
       if (zVal === 1) outTT.ones.push(idx);
 
-      // Compute for Moore (Z dependent strictly on State)
+      // Moore: only the first row per state determines Z; subsequent rows with
+      // the same state are ignored so the output is input-independent
       if (!seenMoore.has(ps)) {
         seenMoore.add(ps);
         if (zVal === 1) outTT_moore.ones.push(ps);
       }
     });
 
+    // Any truth-table row not covered by a state-table entry becomes a don't care
     for (let i = 0; i < (1 << nVars); i++) {
       if (!seen.has(i)) {
         allFFkeys.forEach(k => ffTT[k].dc.push(i));
         outTT.dc.push(i);
       }
     }
-
-    // Populate don't cares for Moore missing states
     for (let i = 0; i < (1 << nFF); i++) {
       if (!seenMoore.has(i)) outTT_moore.dc.push(i);
     }
 
     const eqs = {};
     const groups = {};
-    
-    // Process FF calculations
-    allFFkeys.forEach(k => { 
+
+    allFFkeys.forEach(k => {
       const res = qm(ffTT[k].ones, ffTT[k].dc, nVars, varNames);
       eqs[k] = res.eq;
       groups[k] = res.groups;
     });
-    
-    // Contextual Routing: Apply the appropriate data set based on User Model Choice
-    const finalOutTT = model === 'moore' ? outTT_moore : outTT;
+
+    // Route output minimization through the correct variable set based on the model
+    const finalOutTT   = model === 'moore' ? outTT_moore : outTT;
     const finalOutVars = model === 'moore' ? stateVarNames : varNames;
     const finalOutNVars = model === 'moore' ? nFF : nVars;
 

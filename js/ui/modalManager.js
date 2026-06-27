@@ -1,13 +1,22 @@
 'use strict';
 
-/**
- * Enterprise EDA Window & Overlay Lifecycle Manager
- * Handles multi-mode system popups and custom theme parameters settings.
- */
+// =========================================================
+// modalManager.js — Modal Overlay Lifecycle Manager
+// Provides a single shared modal DOM that is reused across all
+// system dialogs (Settings, About, PDF Preview).
+// Public API:
+//   openSystemModal(title, bodyHtml, footerHtml)        — standard width
+//   openSystemModalWidened(title, bodyHtml, footerHtml) — wide (960px)
+//   closeSystemModal()
+// =========================================================
 
-window.currentGridDensity = window.currentGridDensity || '20';
-window.currentSelectedThemeActive = window.currentSelectedThemeActive || 'navy';
+// Persistent state across modal open/close cycles
+window.currentGridDensity          = window.currentGridDensity          || '20';
+window.currentSelectedThemeActive  = window.currentSelectedThemeActive  || 'navy';
 
+// Lazily injects the shared modal skeleton into the DOM on first use.
+// Re-using one DOM node (rather than creating it per call) avoids layout thrash
+// and keeps z-index stacking predictable across all dialog types.
 function ensureModalDOM() {
     if (!document.getElementById('systemModalBackdrop')) {
         console.log("[EDA DEBUG] Modal DOM not found, injecting dynamically...");
@@ -32,6 +41,8 @@ function ensureModalDOM() {
     }
 }
 
+// Opens the shared modal at standard width, replacing any prior content.
+// Strips pdf-mode and modal-wide classes so the modal resets to default sizing.
 function openSystemModal(title, bodyHtml, footerHtml) {
     ensureModalDOM(); 
     const backdrop = document.getElementById('systemModalBackdrop');
@@ -53,6 +64,8 @@ function openSystemModal(title, bodyHtml, footerHtml) {
     }
 }
 
+// Opens the shared modal with the modal-wide class (960px max-width) applied.
+// Used by PDF Preview and About — dialogs that need more horizontal space.
 function openSystemModalWidened(title, bodyHtml, footerHtml) {
     ensureModalDOM();
     const backdrop = document.getElementById('systemModalBackdrop');
@@ -72,6 +85,8 @@ function openSystemModalWidened(title, bodyHtml, footerHtml) {
     }
 }
 
+// Hides the modal by removing the 'active' class; content is preserved in DOM
+// so reopening the same dialog type is instant (no re-injection needed).
 function closeSystemModal() {
     const backdrop = document.getElementById('systemModalBackdrop');
     if (backdrop) {
@@ -80,6 +95,8 @@ function closeSystemModal() {
     }
 }
 
+// Builds and opens the Settings dialog with the current grid density and theme
+// pre-selected, so the user sees their active state at open time.
 function openSettingsModal() {
     console.log("[EDA DEBUG] Opening Settings window...");
     const title = 'User Preferences & Color Themes';
@@ -216,7 +233,6 @@ function openSettingsModal() {
         </form>
     `;
 
-    // Ensure buttons remain right-aligned for settings
     const footerHtml = `
         <div style="display: flex; justify-content: flex-end; gap: 12px; width: 100%;">
             <button class="btn btn-bordered" onclick="closeSystemModal()">Cancel</button>
@@ -231,6 +247,8 @@ function openSettingsModal() {
     if (activeCard) activeCard.classList.add('selected');
 }
 
+// Toggles the 'selected' CSS class to the clicked swatch and records the choice
+// in currentSelectedThemeActive. The theme is not applied until Save is clicked.
 function selectThemeSwatch(themeName) {
     document.querySelectorAll('.theme-swatch-card').forEach(card => card.classList.remove('selected'));
     const targetCard = document.getElementById(`swatch-${themeName}`);
@@ -240,6 +258,9 @@ function selectThemeSwatch(themeName) {
     }
 }
 
+// Reads grid density and selected theme from the Settings dialog, applies them
+// immediately to the live DOM, and closes the modal.
+// Theme is applied via data-theme attribute; CSS custom properties do the rest.
 function saveSystemPreferencesConfigs() {
     const gridDensityValue = document.getElementById('settingGridDensity').value;
     window.currentGridDensity = gridDensityValue;
@@ -262,10 +283,9 @@ function saveSystemPreferencesConfigs() {
     closeSystemModal();
 }
 
-/**
- * Premium Dashboard-Style "About" Modal
- * Features clear GitHub routing, dynamic Avatar loading, and structured Architecture Specs.
- */
+// Opens the About / System Information dialog in wide-modal mode.
+// Shows product identity, action links, developer profile card, and architecture
+// spec list. Avatar falls back to a monogram initial if img/avatar.png is missing.
 function openAboutModal() {
     console.log("[EDA DEBUG] Opening System Information window...");
     const title = 'System Information';
@@ -288,7 +308,7 @@ function openAboutModal() {
                 <h2 style="font-size: 20px; font-weight: 800; color: var(--text-main); margin: 0 0 10px 0; letter-spacing: 0.5px; line-height: 1.3;">Sequential Circuit Design Automation System</h2>
                 <div style="display: inline-flex; align-items: center; gap: 8px; padding: 4px 14px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 20px; font-size: 12px; font-weight: 700; color: var(--text-muted);">
                     <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--success); box-shadow: 0 0 8px var(--success);"></span>
-                    v2.4.0 &nbsp;|&nbsp; Academic Build
+                    v1.9.0 &nbsp;|&nbsp; Academic Build
                 </div>
             </div>
 
@@ -390,7 +410,6 @@ function openAboutModal() {
         </div>
     `;
 
-    // >>> FIX: Center-aligned the text vertically with the button using Flexbox <<<
     const footerHtml = `
         <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
             <span style="font-size: 11px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.5px;">Spring 2026 · Digital Circuit Design Final Project</span>

@@ -1,7 +1,20 @@
 'use strict';
 
-console.log("[EDA DEBUG] app.js file successfully loaded.");
+// =============================================================================
+// app.js — Application Entry Point
+// Bootstraps the two UI engines (splitter resize + panel drag-reorder) and
+// wires every toolbar button to its handler via bindSafe().
+// Script load order dependency: all other JS modules must load before app.js.
+// =============================================================================
 
+// =========================================================
+// Panel Resize & Drag-to-Reorder Engine
+// =========================================================
+
+// Attaches mouse-based column resize to each .gutter divider and implements a
+// long-press (300 ms) drag-to-reorder gesture on .card-header elements.
+// After any resize or reorder, programmatically fires btnFit so the SVG canvas
+// rescales to the new panel dimensions.
 function initSplittersAndDrag() {
   const container = document.getElementById('appLayout');
   const gutters = Array.from(document.querySelectorAll('.gutter'));
@@ -9,6 +22,7 @@ function initSplittersAndDrag() {
 
   let currentGutter, prevPanel, nextPanel, startX, prevWidth, nextWidth;
 
+  // Attach mousedown to each gutter to begin a resize drag
   gutters.forEach((gutter) => {
     gutter.addEventListener('mousedown', (e) => {
       currentGutter = e.target;
@@ -22,6 +36,7 @@ function initSplittersAndDrag() {
       document.addEventListener('mousemove', onResizeDrag);
       document.addEventListener('mouseup', endResizeDrag);
       document.body.style.cursor = 'col-resize';
+      // Disable pointer events on panels during drag to prevent iframe bleed
       prevPanel.style.pointerEvents = 'none';
       nextPanel.style.pointerEvents = 'none';
     });
@@ -32,7 +47,7 @@ function initSplittersAndDrag() {
     const dx = e.clientX - startX;
     const newPrevWidth = prevWidth + dx;
     const newNextWidth = nextWidth - dx;
-
+    // Enforce a 280px minimum per panel to keep the UI usable
     if (newPrevWidth > 280 && newNextWidth > 280) {
       prevPanel.style.flex = `0 0 ${newPrevWidth}px`;
       nextPanel.style.flex = `0 0 ${newNextWidth}px`;
@@ -47,14 +62,19 @@ function initSplittersAndDrag() {
     if (nextPanel) nextPanel.style.pointerEvents = 'auto';
     if (currentGutter) currentGutter.classList.remove('active');
     currentGutter = null;
-    
+    // Re-fit the SVG after panels resize so the diagram fills the new canvas area
     const fitBtn = document.getElementById('btnFit');
     if (fitBtn) fitBtn.click();
   }
 
+  // -------------------------------------------------------------------------
+  // Long-press drag-to-reorder: holding a card header for 300 ms unlocks drag.
+  // The native HTML5 drag-and-drop API is used for the actual reorder.
+  // -------------------------------------------------------------------------
   let draggedCard = null;
 
   cards.forEach(card => {
+    // Inject a CSS glow SVG overlay used during the drag-lock animation
     const glowEl = document.createElement('div');
     glowEl.className = 'card-glow';
     glowEl.innerHTML = `
@@ -70,16 +90,17 @@ function initSplittersAndDrag() {
     let dragUnlocked = false;
 
     header.addEventListener('mousedown', (e) => {
+      // Ignore clicks on interactive controls inside the header
       if (e.target.closest('button') || e.target.closest('.toolbar') || e.target.closest('.panel-actions')) return;
-      
+
       dragUnlocked = false;
       card.classList.add('long-pressing-loading');
-
+      // 300 ms hold to confirm intentional drag; shorter presses are treated as clicks
       pressTimer = setTimeout(() => {
         dragUnlocked = true;
         card.classList.remove('long-pressing-loading');
         card.classList.add('drag-ready');
-      }, 300); 
+      }, 300);
     });
 
     const cancelPress = () => {
@@ -99,15 +120,12 @@ function initSplittersAndDrag() {
     });
 
     card.addEventListener('dragstart', (e) => {
-      if (!dragUnlocked) {
-        e.preventDefault();
-        return;
-      }
+      if (!dragUnlocked) { e.preventDefault(); return; }
       draggedCard = card;
       card.classList.add('dragging');
       card.classList.remove('drag-ready', 'long-pressing-loading');
       e.dataTransfer.effectAllowed = 'move';
-      
+      // Use a transparent 1px image as the drag ghost so the real card stays visible
       const dragIcon = document.createElement('div');
       dragIcon.style.opacity = '0';
       document.body.appendChild(dragIcon);
@@ -121,20 +139,17 @@ function initSplittersAndDrag() {
       });
       draggedCard = null;
       dragUnlocked = false;
-      
       const fitBtn = document.getElementById('btnFit');
       if (fitBtn) fitBtn.click();
     });
 
     card.addEventListener('dragover', (e) => {
-      e.preventDefault(); 
+      e.preventDefault();
       if (!draggedCard || draggedCard === card) return;
       card.classList.add('drag-over');
     });
 
-    card.addEventListener('dragleave', () => {
-      card.classList.remove('drag-over');
-    });
+    card.addEventListener('dragleave', () => { card.classList.remove('drag-over'); });
 
     card.addEventListener('drop', (e) => {
       e.preventDefault();
@@ -145,14 +160,16 @@ function initSplittersAndDrag() {
     });
   });
 
+  // Reinserts DOM nodes so sourceCard occupies targetCard's original position.
+  // Gutters are re-threaded between cards after every reorder.
   function reorderPanels(sourceCard, targetCard) {
     const currentCards = Array.from(container.querySelectorAll('.card'));
     const sourceIdx = currentCards.indexOf(sourceCard);
     const targetIdx = currentCards.indexOf(targetCard);
-    
+
     currentCards.splice(sourceIdx, 1);
     currentCards.splice(targetIdx, 0, sourceCard);
-    
+
     currentCards.forEach((c, idx) => {
       container.appendChild(c);
       if (idx < currentCards.length - 1) {
@@ -162,9 +179,14 @@ function initSplittersAndDrag() {
   }
 }
 
-function initEvents() {
-  console.log("[EDA DEBUG] Preparing to bind system event listeners...");
+// =========================================================
+// Global Event Binding
+// =========================================================
 
+// Binds all toolbar buttons to their handler functions.
+// bindSafe() checks for element existence and function availability before
+// attaching to avoid silent failures when scripts load out of order.
+function initEvents() {
   const bindSafe = (id, fn) => {
     if (typeof fn !== 'function') {
       console.warn(`[EDA DEBUG] Binding failed: Target function for button ${id} does not exist.`);
@@ -191,7 +213,7 @@ function initEvents() {
   if (typeof clearTable !== 'undefined') bindSafe('btnClear', clearTable);
   if (typeof loadExample !== 'undefined') bindSafe('btnLoad', loadExample);
   if (typeof addRow !== 'undefined') bindSafe('btnAddRow', () => addRow());
-  
+
   if (typeof downloadSVG !== 'undefined') bindSafe('btnDlSVG', downloadSVG);
   if (typeof downloadPNG !== 'undefined') bindSafe('btnDlPNG', downloadPNG);
   if (typeof exportReport !== 'undefined') bindSafe('btnExport', exportReport);
@@ -201,9 +223,11 @@ function initEvents() {
   } else {
     console.error("[EDA DEBUG] 'openSettingsModal' function not found! Please check modalManager.js.");
   }
-  
+
   if (typeof openAboutModal !== 'undefined') bindSafe('btnAbout', openAboutModal);
 
+  // Live header sync: update the state table column headers as the user types
+  // variable names without triggering a full re-generation.
   const inpVarEl = document.getElementById('inputVars');
   const outVarEl = document.getElementById('outputVars');
   const thInp = document.getElementById('thInput');
@@ -231,6 +255,7 @@ function initEvents() {
   console.log("[EDA DEBUG] System event bindings completely initialized.");
 }
 
+// Bootstrap
 initEvents();
 
 if (typeof loadExample === 'function') {
