@@ -1,5 +1,7 @@
 'use strict';
 
+console.log("[EDA DEBUG] app.js file successfully loaded.");
+
 function initSplittersAndDrag() {
   const container = document.getElementById('appLayout');
   const gutters = Array.from(document.querySelectorAll('.gutter'));
@@ -45,7 +47,9 @@ function initSplittersAndDrag() {
     if (nextPanel) nextPanel.style.pointerEvents = 'auto';
     if (currentGutter) currentGutter.classList.remove('active');
     currentGutter = null;
-    if (window.svgFit) window.svgFit();
+    
+    const fitBtn = document.getElementById('btnFit');
+    if (fitBtn) fitBtn.click();
   }
 
   let draggedCard = null;
@@ -66,7 +70,7 @@ function initSplittersAndDrag() {
     let dragUnlocked = false;
 
     header.addEventListener('mousedown', (e) => {
-      if (e.target.closest('button') || e.target.closest('.toolbar')) return;
+      if (e.target.closest('button') || e.target.closest('.toolbar') || e.target.closest('.panel-actions')) return;
       
       dragUnlocked = false;
       card.classList.add('long-pressing-loading');
@@ -117,7 +121,9 @@ function initSplittersAndDrag() {
       });
       draggedCard = null;
       dragUnlocked = false;
-      if (window.svgFit) window.svgFit();
+      
+      const fitBtn = document.getElementById('btnFit');
+      if (fitBtn) fitBtn.click();
     });
 
     card.addEventListener('dragover', (e) => {
@@ -157,34 +163,46 @@ function initSplittersAndDrag() {
 }
 
 function initEvents() {
-  const bind = (id, fn) => {
+  console.log("[EDA DEBUG] Preparing to bind system event listeners...");
+
+  const bindSafe = (id, fn) => {
+    if (typeof fn !== 'function') {
+      console.warn(`[EDA DEBUG] Binding failed: Target function for button ${id} does not exist.`);
+      return;
+    }
     const el = document.getElementById(id);
-    if (el) el.addEventListener('click', fn);
+    if (el) {
+      el.addEventListener('click', (e) => {
+        console.log(`[EDA DEBUG] Intercepted click event: Button [${id}]`);
+        fn(e);
+      });
+      console.log(`[EDA DEBUG] Button [${id}] successfully bound.`);
+    } else {
+      console.error(`[EDA DEBUG] HTML element not found: ID [${id}]`);
+    }
   };
 
   if (typeof generate === 'function') {
-    bind('btnGenerate', generate);
+    bindSafe('btnGenerate', generate);
   } else {
-    console.error("[CRITICAL] logicEngine.js is not loaded.");
+    console.error("[EDA DEBUG] CRITICAL: 'generate' function not found! Please check logicEngine.js.");
   }
 
-  bind('btnClear', clearTable);
-  bind('btnLoad', loadExample);
-  bind('btnAddRow', () => addRow());
+  if (typeof clearTable !== 'undefined') bindSafe('btnClear', clearTable);
+  if (typeof loadExample !== 'undefined') bindSafe('btnLoad', loadExample);
+  if (typeof addRow !== 'undefined') bindSafe('btnAddRow', () => addRow());
   
-  bind('btnZoomIn', () => svgZoom(1.15));
-  bind('btnZoomOut', () => svgZoom(0.85));
-  bind('btnZoomReset', svgReset);
-  bind('btnFit', svgFit);
+  if (typeof downloadSVG !== 'undefined') bindSafe('btnDlSVG', downloadSVG);
+  if (typeof downloadPNG !== 'undefined') bindSafe('btnDlPNG', downloadPNG);
+  if (typeof exportReport !== 'undefined') bindSafe('btnExport', exportReport);
+
+  if (typeof openSettingsModal !== 'undefined') {
+    bindSafe('btnSettings', openSettingsModal);
+  } else {
+    console.error("[EDA DEBUG] 'openSettingsModal' function not found! Please check modalManager.js.");
+  }
   
-  bind('btnDlSVG', downloadSVG);
-  bind('btnDlPNG', downloadPNG);
-  
-  // Modal Trigger Event Bindings
-  bind('btnSettings', openSettings);
-  bind('btnAbout', openAbout);
-  
-  bind('btnExport', exportReport);
+  if (typeof openAboutModal !== 'undefined') bindSafe('btnAbout', openAboutModal);
 
   const inpVarEl = document.getElementById('inputVars');
   const outVarEl = document.getElementById('outputVars');
@@ -204,12 +222,17 @@ function initEvents() {
 
   window.addEventListener('resize', () => {
     if (document.getElementById('circuit-svg')) {
-      svgFit();
+      const fitBtn = document.getElementById('btnFit');
+      if (fitBtn) fitBtn.click();
     }
   });
 
   initSplittersAndDrag();
+  console.log("[EDA DEBUG] System event bindings completely initialized.");
 }
 
 initEvents();
-loadExample();
+
+if (typeof loadExample === 'function') {
+  loadExample();
+}

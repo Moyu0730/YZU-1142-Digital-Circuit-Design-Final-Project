@@ -258,6 +258,45 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+### [1.7.0] — 2026-06-26
+
+#### Changed — `css/styles.css` (theme system architecture)
+
+- **`:root` + `body[data-theme]` attribute selectors**: Theme tokens remain in `:root` as default; each of the 10 themes now declared as `body[data-theme="..."] { ... }` CSS attribute selectors — replaces previous approach of JS writing inline `style` properties directly on `:root`
+- **Pervasive token adoption**: All remaining hardcoded colors replaced with CSS variables so every theme is consistent without JS intervention:
+  - `.table-container` border: `#1e293b` → `var(--nav-bg)`
+  - `.modern-table th` background / color: `#1e293b` / `#ffffff` → `var(--nav-bg)` / `var(--text-inverse)`
+  - `.card-header` background: `#f8fafc` → `var(--card-bg)`
+  - `.input-group input`, `.btn-micro`, `.btn-secondary`, `.action-group`, `.bottom-bar`, `.circuit-note`: all fixed whites replaced with `var(--card-bg)`
+  - `.canvas-area` dot grid: dots and background now use `var(--border-color)` / `var(--bg-color)`
+  - `.gutter::before`, `.del-btn`, hover states: replaced hardcoded grays with `var(--border-color)`, `var(--text-muted)`, `rgba(0,0,0,0.05)`
+- **Quantum dark mode tokens**: `body[data-theme="quantum"]` explicitly sets `--card-bg: #0f172a`, `--text-main: #e2e8f0` and related tokens for OLED-safe dark rendering
+- **Even-row table striping removed**: `tbody tr:nth-child(even)` fixed `#f8fafc` background dropped — incompatible with dark themes; left unstyled for theme neutrality
+
+#### Changed — `js/ui/modalManager.js`
+
+- **Theme application method**: `applyThemeImmediate()` no longer calls `root.style.setProperty()` per token; now calls `document.body.setAttribute('data-theme', theme)` — a single DOM write that lets CSS attribute selectors do the rest
+- **Modal DOM refactor**: `createModalSystem()` → `ensureModalDOM()`; backdrop ID changed from `globalModalBackdrop` to `systemModalBackdrop`; content wrapper ID from `modalContentWrapper` to `systemModalContent`; click-outside handler checks `e.target.id === 'systemModalBackdrop'` instead of attaching a second backdrop listener
+- **Function renames**: `openSettings()` → `openSettingsModal()`, `openAbout()` → `openAboutModal()` — explicit `Modal` suffix prevents collision with generic utility names
+- **Global state**: Added `window.currentGridDensity` and `window.currentSelectedThemeActive` as persistent module-level state for future settings persistence
+
+#### Changed — `js/app.js`
+
+- **`bind()` → `bindSafe()`**: Event binding helper now type-checks the target function before binding; logs a `[EDA DEBUG]` warning if the function is undefined; logs element-not-found errors if the DOM node is missing
+- **Zoom binding delegation**: `btnZoomIn`, `btnZoomOut`, `btnZoomReset`, `btnFit` bindings removed from `initEvents()`; ownership transferred entirely to `circuitInteraction.js` to avoid duplicate listeners
+- **`svgFit()` calls replaced**: Direct `svgFit()` calls in resize handler, drag end, and panel resize end now delegate via `document.getElementById('btnFit').click()` — ensures the zoom engine in `circuitInteraction.js` is always the single source of truth
+- **Drag guard extended**: `.panel-actions` added to the drag-cancel condition so clicking toolbar buttons inside the circuit panel header does not accidentally trigger the long-press drag lock
+- **`loadExample()` guard**: Wrapped in `typeof loadExample === 'function'` check for load-order safety
+- **Updated function references**: `openSettings` → `openSettingsModal`, `openAbout` → `openAboutModal` to match renamed modal functions
+
+#### Changed — `js/ui/circuitInteraction.js`
+
+- **`[EDA DEBUG]` trace logging**: Added `console.log` at every major decision point — module load, `DOMContentLoaded`, zoom apply, base-dimension cache miss, mask pass, tooltip identify, tooltip render — for systematic debugging without a breakpoint
+- **Explicit null-check button binding**: Replaced optional-chaining `?.addEventListener` with explicit `if (btnZoomIn) { ... }` pattern for consistent behavior and log confirmation on each binding
+- **Comment cleanup**: Removed multi-line JSDoc block and `>>> NEW:` markers; section titles simplified to concise single-line headings
+
+---
+
 ### [1.6.0] — 2026-06-26
 
 #### Added — `js/ui/circuitInteraction.js` *(new file)*

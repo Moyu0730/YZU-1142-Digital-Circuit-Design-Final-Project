@@ -1,10 +1,9 @@
 'use strict';
 
-/**
- * Enterprise EDA Component Interaction & Canvas Zoom Engine
- * Handles precise vector zooming, text bounding-box masking, and logic parsing.
- */
+console.log("[EDA DEBUG] circuitInteraction.js interaction engine loaded.");
+
 document.addEventListener('DOMContentLoaded', () => {
+  console.log("[EDA DEBUG] DOMContentLoaded triggered, initializing canvas engine...");
   
   // =========================================================
   // 1. Precise Vector Canvas Zoom Engine 
@@ -12,20 +11,22 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentSvgZoom = 1.0;
 
   function applyCanvasZoom(newZoom) {
+    console.log(`[EDA DEBUG] Applying zoom: Current scale ${currentSvgZoom} -> Target scale ${newZoom}`);
     const svg = document.getElementById('circuit-svg');
-    if (!svg) return;
+    if (!svg) {
+      console.warn("[EDA DEBUG] #circuit-svg canvas not found, aborting zoom.");
+      return;
+    }
 
-    // Constrain scaling boundaries cleanly (40% to 400%)
     currentSvgZoom = Math.max(0.4, Math.min(4.0, newZoom));
 
-    // Inject viewBox if missing so vector paths scale proportionally
     if (!svg.getAttribute('viewBox')) {
+        console.log("[EDA DEBUG] Canvas missing viewBox, injecting fallback...");
         const w = parseFloat(svg.getAttribute('width')) || 800;
         const h = parseFloat(svg.getAttribute('height')) || 600;
         svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
     }
 
-    // Cache physical dimensions
     let baseW = svg.getAttribute('data-base-width');
     let baseH = svg.getAttribute('data-base-height');
     
@@ -36,57 +37,61 @@ document.addEventListener('DOMContentLoaded', () => {
         svg.setAttribute('data-base-height', baseH);
     }
 
-    // Force absolute dimensions via inline styles with important flag to override any CSS classes
     svg.style.setProperty('width', (parseFloat(baseW) * currentSvgZoom) + 'px', 'important');
     svg.style.setProperty('height', (parseFloat(baseH) * currentSvgZoom) + 'px', 'important');
-    
-    // Destroy restrictive CSS boundaries
     svg.style.setProperty('max-width', 'none', 'important');
     svg.style.setProperty('max-height', 'none', 'important');
     svg.style.transform = 'none';
+    
+    console.log(`[EDA DEBUG] Zoom complete. Canvas physical dimensions updated.`);
   }
 
-  // Hook Segmented Button Actions
-  document.getElementById('btnZoomIn')?.addEventListener('click', () => applyCanvasZoom(currentSvgZoom + 0.2));
-  document.getElementById('btnZoomOut')?.addEventListener('click', () => applyCanvasZoom(currentSvgZoom - 0.2));
-  document.getElementById('btnZoomReset')?.addEventListener('click', () => applyCanvasZoom(1.0));
+  const btnZoomIn = document.getElementById('btnZoomIn');
+  const btnZoomOut = document.getElementById('btnZoomOut');
+  const btnZoomReset = document.getElementById('btnZoomReset');
+  const btnFit = document.getElementById('btnFit');
+
+  if(btnZoomIn) { btnZoomIn.addEventListener('click', () => applyCanvasZoom(currentSvgZoom + 0.2)); console.log("[EDA DEBUG] Bound Zoom In button"); }
+  if(btnZoomOut) { btnZoomOut.addEventListener('click', () => applyCanvasZoom(currentSvgZoom - 0.2)); console.log("[EDA DEBUG] Bound Zoom Out button"); }
+  if(btnZoomReset) { btnZoomReset.addEventListener('click', () => applyCanvasZoom(1.0)); console.log("[EDA DEBUG] Bound Zoom Reset button"); }
   
-  document.getElementById('btnFit')?.addEventListener('click', () => {
-    const svg = document.getElementById('circuit-svg');
-    const container = document.getElementById('svg-container');
-    if (!svg || !container) return;
+  if(btnFit) {
+    btnFit.addEventListener('click', () => {
+      console.log("[EDA DEBUG] Executing Fit to Screen calculation...");
+      const svg = document.getElementById('circuit-svg');
+      const container = document.getElementById('svg-container');
+      if (!svg || !container) return;
 
-    let baseW = parseFloat(svg.getAttribute('data-base-width') || svg.getAttribute('width') || 800);
-    let baseH = parseFloat(svg.getAttribute('data-base-height') || svg.getAttribute('height') || 600);
+      let baseW = parseFloat(svg.getAttribute('data-base-width') || svg.getAttribute('width') || 800);
+      let baseH = parseFloat(svg.getAttribute('data-base-height') || svg.getAttribute('height') || 600);
 
-    const padding = 80; 
-    const scaleW = (container.clientWidth - padding) / baseW;
-    const scaleH = (container.clientHeight - padding) / baseH;
-    
-    applyCanvasZoom(Math.min(scaleW, scaleH, 1.5));
-  });
+      const padding = 80; 
+      const scaleW = (container.clientWidth - padding) / baseW;
+      const scaleH = (container.clientHeight - padding) / baseH;
+      
+      applyCanvasZoom(Math.min(scaleW, scaleH, 1.5));
+    });
+    console.log("[EDA DEBUG] Bound Fit to Screen button");
+  }
 
   // =========================================================
-  // 2. >>> NEW: Advanced Z-Index DOM Reorder & Text Masking <<<
-  //    Generates solid white backgrounds for texts AND forces them
-  //    to the absolute front of the SVG rendering queue.
+  // 2. Text Bounding-Box Mask Engine
   // =========================================================
   function applyTextBackgroundMasks() {
     const svg = document.getElementById('circuit-svg');
     if (!svg) return;
 
     const texts = svg.querySelectorAll('text:not([data-masked="true"])');
+    if(texts.length > 0) console.log(`[EDA DEBUG] Found ${texts.length} text nodes, initiating DOM mask reordering...`);
     
     texts.forEach(txt => {
         txt.setAttribute('data-masked', 'true'); 
-        
         try {
             const bbox = txt.getBBox();
             if (bbox.width === 0 && bbox.height === 0) return;
 
             const padX = 4;
             const padY = 2;
-            
             const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
             rect.setAttribute('x', bbox.x - padX);
             rect.setAttribute('y', bbox.y - padY);
@@ -96,31 +101,25 @@ document.addEventListener('DOMContentLoaded', () => {
             rect.setAttribute('class', 'text-bg-mask');
             rect.style.fill = '#ffffff';
             
-            txt.style.stroke = 'none'; // Wipe out any blurry stroke hacks
+            txt.style.stroke = 'none'; 
             
             const parent = txt.parentNode;
             parent.insertBefore(rect, txt);
-
-            // Z-INDEX FIX 1: Bring mask and text to the bottom of their direct parent
             parent.appendChild(rect);
             parent.appendChild(txt);
 
-            // Z-INDEX FIX 2: If inside a <g>, pop the entire group to the absolute front of SVG
             if (parent.tagName.toLowerCase() === 'g' && parent.parentNode) {
                 parent.parentNode.appendChild(parent);
             }
-
         } catch(e) {}
     });
   }
 
-  // Hook into DOM mutations to auto-apply masks and reorder z-index when circuit renders
   const svgContainer = document.getElementById('svg-container');
   if (svgContainer) {
       const observer = new MutationObserver((mutations) => {
           const hasAddedNodes = mutations.some(m => m.addedNodes.length > 0);
           if (hasAddedNodes) {
-              // Delay allows browser layout engine to catch up so getBBox() calculates correctly
               setTimeout(applyTextBackgroundMasks, 50);
           }
       });
@@ -131,7 +130,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // 3. Intelligent Geometry Radar & Tooltip Engine
   // =========================================================
   const tooltip = document.getElementById('circuitTooltip');
-  if (!tooltip) return;
+  if (!tooltip) {
+      console.error("[EDA DEBUG] .circuit-tooltip node not found, tooltip engine disabled!");
+      return;
+  }
 
   let mouseX = 0;
   let mouseY = 0;
@@ -144,17 +146,21 @@ document.addEventListener('DOMContentLoaded', () => {
   svgContainer.addEventListener('click', (e) => {
     const target = e.target;
     
-    // Safety exit if clicking dead space or the new background masks
     if (!['rect', 'path', 'polygon', 'circle', 'text', 'tspan'].includes(target.tagName) || target.classList.contains('text-bg-mask')) {
       tooltip.classList.remove('visible');
       return;
     }
 
+    console.log(`[EDA DEBUG] Clicked SVG node: <${target.tagName}>`);
     const comp = identifyComponentByGeometry(target);
+    
     if (comp.type === 'UNKNOWN') {
+      console.log("[EDA DEBUG] Unknown node, bypassing tooltip.");
       tooltip.classList.remove('visible');
       return;
     }
+
+    console.log(`[EDA DEBUG] Component successfully identified: ${comp.type}`);
 
     const eqMap = parseEquationsFromUI();
     let qLabel = null;
@@ -166,7 +172,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (tooltipHTML) {
       tooltip.innerHTML = tooltipHTML;
-      
       tooltip.style.left = '0px'; 
       tooltip.style.top = '0px';
       tooltip.classList.add('visible');
@@ -177,7 +182,6 @@ document.addEventListener('DOMContentLoaded', () => {
         let finalX = mouseX + 15;
         let finalY = mouseY + 15;
 
-        // Boundary protection
         if (finalX + ttWidth > window.innerWidth) finalX = mouseX - ttWidth - 15;
         if (finalY + ttHeight > window.innerHeight) finalY = mouseY - ttHeight - 15;
         
@@ -194,11 +198,10 @@ document.addEventListener('DOMContentLoaded', () => {
       tooltip.classList.remove('visible');
     }
   });
+  
+  console.log("[EDA DEBUG] Canvas engine bindings completely initialized.");
 });
 
-/**
- * Geometric Vector Radar: Analyzes raw shape tags and bounding overlaps to uniquely isolate gate categories.
- */
 function identifyComponentByGeometry(target) {
     const targetRect = target.getBoundingClientRect();
     const targetCenterX = targetRect.left + targetRect.width / 2;
