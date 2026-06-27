@@ -258,6 +258,50 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+### [1.6.0] — 2026-06-26
+
+#### Added — `js/ui/circuitInteraction.js` *(new file)*
+
+- **Precise vector canvas zoom engine**: `applyCanvasZoom()` replaces the old `svgScale`-based approach; caches physical base dimensions as `data-base-width` / `data-base-height` on the SVG element; applies absolute `px` width/height via `style.setProperty(..., 'important')` to override any CSS constraints; zoom bounded to 40%–400%
+- **Text bounding-box masking**: `applyTextBackgroundMasks()` runs after each circuit render via `MutationObserver`; calls `getBBox()` on every `<text>` node and inserts a white `<rect class="text-bg-mask">` behind it, eliminating wire-through-label visual artifacts; also re-appends the mask and text to their parent group so they render above wires, then promotes the parent `<g>` to the top of the SVG render stack
+- **Clickable component tooltip engine**: Click any SVG gate, flip-flop block, or signal label to open a dark monospace tooltip with full hardware spec:
+  - `identifyComponentByGeometry()` — geometry radar that classifies clicked element as `AND` / `OR` / `NOT` / `FF` / `LABEL` / `UNKNOWN` by inspecting nearby text content within a 45 px radius
+  - `generateTooltipHTML()` — builds tooltip HTML with component icon, input/output port rows, and simplified boolean equation pulled from the UI output panel
+  - `findNearestStateLabel()` — resolves which `Q` state variable a flip-flop block belongs to by nearest-distance scan
+  - `findNearestPortLabel()` — resolves which output port (J, K, T, D, Z) a gate feeds by scanning for known port names to the gate's right
+  - `parseEquationsFromUI()` — reads simplified equations directly from the `#output1` table DOM to populate tooltip logic
+  - `highlight()` — colorizes `+`, `·`, `'`, `(`, `)` operators in the tooltip equation display
+  - Tooltip dismisses on outside click; boundary collision avoidance prevents tooltip from clipping off screen edges
+
+#### Added — `css/styles.css`
+
+- **CAD dot grid canvas**: `.canvas-area` now renders an `radial-gradient` dot grid background (20 px spacing, `#cbd5e1` dots) matching engineering schematic paper; padding increased to 32 px; `display: grid; place-items: center` centers the SVG on the canvas
+- **Circuit SVG card style**: `#svg-container svg` gets `box-shadow`, `border-radius: 4px`, and `border: 1px solid #e2e8f0`; `max-width` / `max-height` restrictions removed so the zoom engine has full control
+- **`.circuit-tooltip`** component styles: dark `#1e293b` background, monospace font, `tt-header` / `tt-body` / `tt-section` / `tt-row` / `tt-port` / `tt-eq` / `tt-desc` / `tt-operator` anatomy; scale-in animation via `transform: translateY(10px) → (0)` and `opacity` transition
+- **`.text-bg-mask`**: `fill: #ffffff; pointer-events: none` for SVG text background rect elements
+- **SVG element hover**: CSS hover rule on `#svg-container svg` child elements applies `filter: drop-shadow(0 0 4px rgba(37,99,235,0.4))` and `opacity: 0.8`
+- **`.action-group` / `.panel-actions`**: New segmented button container component for the circuit panel toolbar; handles `border-right` separators, hover states, and export-specific coloring via `.export-group`
+
+#### Changed — `index.html`
+
+- **Circuit panel toolbar rebuilt**: Icon-only segmented buttons replace the old `icon-btn` + `action-link` text buttons; each button uses an inline SVG icon (Lucide-style); grouped into two `action-group` segments — zoom controls and export controls
+- **`#circuitTooltip` DOM node**: Persistent tooltip container added to `<body>` before scripts; populated and positioned dynamically by `circuitInteraction.js`
+
+#### Changed — `js/ui/exportManager.js`
+
+- **`downloadSVG()` export fix**: Clones the SVG and strips all inline zoom styles (`width`, `height`, `max-width`, `max-height`, `transform`) before serializing; reads `data-base-width` / `data-base-height` for correct output dimensions — prevents previously zoomed state from corrupting the exported file
+- **`downloadPNG()` export fix**: Same clone-and-strip approach before rasterizing to canvas; canvas size now based on actual viewBox or stored base dimensions, not the current zoom-scaled `style` values
+- **`exportReport()` SVG fix**: SVG clone strips zoom styles and sets `width="100%" height="auto"` so the circuit diagram fits the A4 PDF column responsively without overflowing
+- **PDF toolbar icons**: Text "Zoom +" / "Zoom -" labels replaced with SVG icon buttons (Fit to Height, Fit to Width, Zoom Out, Zoom In) in two segmented groups, matching the main canvas toolbar visual language
+- **`fitIframeToWidth()` max scale**: Reduced from `1.5` to `1.2` to prevent oversized initial preview on wide monitors
+
+#### Changed — `css/modal.css`
+
+- `.modal-body.pdf-mode` padding reduced from `24px` to `0`; PDF controls bar now owns its own `margin: 16px 24px` spacing
+- Swatch CSS columns aligned with consistent spacing for readability; comment cleanup
+
+---
+
 ### [1.5.0] — 2026-06-26
 
 #### Added — `js/ui/modalManager.js` + `css/modal.css` *(new files)*

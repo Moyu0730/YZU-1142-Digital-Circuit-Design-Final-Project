@@ -3,28 +3,52 @@
 function downloadSVG() {
   const s = document.getElementById('circuit-svg');
   if (!s) return alert('Generate the circuit first.');
-  const blob = new Blob([new XMLSerializer().serializeToString(s)], { type:'image/svg+xml' });
+  
+  // Create a clean clone to prevent viewport zoom styles from corrupting the exported file
+  const clone = s.cloneNode(true);
+  clone.style.removeProperty('width');
+  clone.style.removeProperty('height');
+  clone.style.removeProperty('max-width');
+  clone.style.removeProperty('max-height');
+  clone.style.removeProperty('transform');
+  
+  const w = s.getAttribute('data-base-width') || (s.viewBox ? s.viewBox.baseVal.width : 800);
+  const h = s.getAttribute('data-base-height') || (s.viewBox ? s.viewBox.baseVal.height : 600);
+  clone.setAttribute('width', w);
+  clone.setAttribute('height', h);
+
+  const blob = new Blob([new XMLSerializer().serializeToString(clone)], { type:'image/svg+xml' });
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob); a.download = 'circuit.svg'; a.click();
+  a.href = URL.createObjectURL(blob); 
+  a.download = 'circuit.svg'; 
+  a.click();
 }
 
 function downloadPNG() {
   const s = document.getElementById('circuit-svg');
   if (!s) return alert('Generate the circuit first.');
-  const vb = s.viewBox.baseVal;
-  const w = vb.width;
-  const h = vb.height;
-  const scale = 2;
+  
+  const w = s.viewBox ? s.viewBox.baseVal.width : (parseFloat(s.getAttribute('data-base-width')) || 800);
+  const h = s.viewBox ? s.viewBox.baseVal.height : (parseFloat(s.getAttribute('data-base-height')) || 600);
+  const scale = 2; // High resolution export
 
   const canvas = document.createElement('canvas');
   canvas.width = w * scale;
   canvas.height = h * scale;
   const ctx = canvas.getContext('2d');
 
+  // Fill white background for PNG
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+  // Clean clone to strip UI zoom artifacts
   const clone = s.cloneNode(true);
+  clone.style.removeProperty('width');
+  clone.style.removeProperty('height');
+  clone.style.removeProperty('max-width');
+  clone.style.removeProperty('max-height');
+  clone.style.removeProperty('transform');
+  
   clone.setAttribute('width', w);
   clone.setAttribute('height', h);
 
@@ -75,9 +99,22 @@ function exportReport() {
     });
   });
   const cleanTableHtml = tableClone.outerHTML;
-
   const out1Html = document.getElementById('output1').innerHTML;
-  const svgHtml = s.outerHTML;
+
+  // >>> CRITICAL FIX: SVG Clean Clone for PDF Layout <<<
+  // This prevents the interactive canvas zoom properties from blowing up the A4 paper layout
+  const svgClone = s.cloneNode(true);
+  svgClone.style.removeProperty('width');
+  svgClone.style.removeProperty('height');
+  svgClone.style.removeProperty('max-width');
+  svgClone.style.removeProperty('max-height');
+  svgClone.style.removeProperty('transform');
+  
+  // Force 100% width so it perfectly fits the PDF container responsively
+  svgClone.setAttribute('width', '100%');
+  svgClone.setAttribute('height', 'auto');
+  
+  const svgHtml = svgClone.outerHTML;
 
   const reportHTML = `
     <!DOCTYPE html>
@@ -118,10 +155,8 @@ function exportReport() {
           color: #2563eb; margin-top: 24px; border-bottom: 1px solid #cbd5e1; 
           padding-bottom: 6px; margin-bottom: 12px; font-size: 16px; 
           width: 100%; text-transform: uppercase; letter-spacing: 0.5px;
-          page-break-after: avoid; 
-          page-break-inside: avoid;
+          page-break-after: avoid; page-break-inside: avoid;
         }
-
         h3 { page-break-after: avoid; }
         
         .info-section { 
@@ -133,29 +168,18 @@ function exportReport() {
         .info-section p { margin: 0; }
         .info-section strong { color: #334155; margin-right: 6px; text-transform: uppercase; font-size: 11px; }
         
-        .table-container { 
-          border: 2px solid #334155 !important; border-radius: 4px; 
-          overflow: hidden; margin-bottom: 16px; page-break-inside: avoid; 
-        }
+        .table-container { border: 2px solid #334155 !important; border-radius: 4px; overflow: hidden; margin-bottom: 16px; page-break-inside: avoid; }
         .modern-table { border-collapse: collapse; width: 100%; font-size: 14px; text-align: center; }
         .modern-table th, .modern-table td { border: 1px solid #94a3b8 !important; padding: 10px; }
-        .modern-table th { 
-          background-color: #1e293b !important; color: #ffffff !important; 
-          font-weight: 700; text-transform: uppercase; letter-spacing: 1px; 
-          -webkit-print-color-adjust: exact; print-color-adjust: exact; 
-        }
+        .modern-table th { background-color: #1e293b !important; color: #ffffff !important; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         .modern-table tbody tr:nth-child(even) td { background-color: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         .modern-table td { font-weight: 600; }
         
         .placeholder, .sec-label, .empty-state, .drag-handle { display: none !important; }
-        
         .circuit-section { margin-top: 16px; width: 100%; page-break-inside: avoid; }
         .svg-wrap { text-align: center; margin-top: 16px; width: 100%; }
-        svg { 
-          max-width: 100% !important; max-height: 120mm !important; 
-          width: auto !important; height: auto !important; 
-          border: 1px solid #cbd5e1 !important; border-radius: 4px;
-        }
+        
+        svg { max-width: 100% !important; height: auto !important; border: 1px solid #cbd5e1 !important; border-radius: 4px; }
       </style>
     </head>
     <body>
@@ -163,38 +187,25 @@ function exportReport() {
         <h1>Sequential Circuit Design Report</h1>
         <div class="student-info">${studentInfo}</div>
       </div>
-
       <div class="info-section">
-        <p><strong>Model:</strong> ${model}</p>
-        <p><strong>Flip-Flop:</strong> ${ffType}</p>
-        <p><strong>Input:</strong> ${inputVars}</p>
-        <p><strong>Output:</strong> ${outputVars}</p>
+        <p><strong>Model:</strong> ${model}</p><p><strong>Flip-Flop:</strong> ${ffType}</p>
+        <p><strong>Input:</strong> ${inputVars}</p><p><strong>Output:</strong> ${outputVars}</p>
       </div>
-
       <h2>1. State Transition Table</h2>
-      <div class="table-container">
-        <table class="modern-table">
-          ${cleanTableHtml.replace(/<table[^>]*>|<\/table>/gi, '')}
-        </table>
-      </div>
-
-      <h2>2. Logic Synthesis</h2>
-      ${out1Html}
-
+      <div class="table-container"><table class="modern-table">${cleanTableHtml.replace(/<table[^>]*>|<\/table>/gi, '')}</table></div>
+      <h2>2. Logic Synthesis</h2>${out1Html}
       <div class="circuit-section">
         <h2>3. Sequential Circuit Schematic</h2>
-        <div class="svg-wrap">
-          ${svgHtml}
-        </div>
+        <div class="svg-wrap">${svgHtml}</div>
       </div>
     </body>
     </html>
   `;
 
-  // >>> REFACTORED SCALER DOM: Pure single-scrollbar architecture <<<
+  // --- PDF Print Preview Modal UI ---
   const previewBodyHtml = `
-    <div class="pdf-controls-bar">
-      <select class="pdf-select-menu" id="pdfZoomSelect" onchange="onZoomMenuChange(this.value)">
+    <div class="pdf-controls-bar" style="gap: 6px;">
+      <select class="pdf-select-menu" id="pdfZoomSelect" onchange="onZoomMenuChange(this.value)" style="margin-right: 8px;">
         <option value="fit_page">Fit to Page</option>
         <option value="fit_width" selected>Fit to Width</option>
         <option value="actual">Actual Size (1:1)</option>
@@ -203,8 +214,25 @@ function exportReport() {
         <option value="1.5">150%</option>
         <option value="2.0">200%</option>
       </select>
-      <button onclick="adjustIframeZoom(0.1)">Zoom +</button>
-      <button onclick="adjustIframeZoom(-0.1)">Zoom -</button>
+
+      <div style="display:flex; border: 1px solid #cbd5e1; border-radius: 4px; overflow:hidden; background: #fff;">
+        <button onclick="fitIframeToContainer()" title="Fit to Height" style="border:none; border-radius:0; border-right: 1px solid #cbd5e1; padding: 6px 10px;">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="#334155" stroke-width="2" fill="none"><rect x="4" y="2" width="16" height="20" rx="2"></rect><polyline points="12 7 9 10 15 10 12 7"></polyline><polyline points="12 17 9 14 15 14 12 17"></polyline></svg>
+        </button>
+        <button onclick="fitIframeToWidth()" title="Fit to Width" style="border:none; border-radius:0; padding: 6px 10px;">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="#334155" stroke-width="2" fill="none"><rect x="4" y="2" width="16" height="20" rx="2"></rect><polyline points="7 12 10 9 10 15 7 12"></polyline><polyline points="17 12 14 9 14 15 17 12"></polyline></svg>
+        </button>
+      </div>
+
+      <div style="display:flex; border: 1px solid #cbd5e1; border-radius: 4px; overflow:hidden; background: #fff; margin-left: 8px;">
+        <button onclick="adjustIframeZoom(-0.1)" title="Zoom Out" style="border:none; border-radius:0; border-right: 1px solid #cbd5e1; padding: 6px 10px;">
+           <svg viewBox="0 0 24 24" width="16" height="16" stroke="#334155" stroke-width="2" fill="none" stroke-linecap="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+        </button>
+        <button onclick="adjustIframeZoom(0.1)" title="Zoom In" style="border:none; border-radius:0; padding: 6px 10px;">
+           <svg viewBox="0 0 24 24" width="16" height="16" stroke="#334155" stroke-width="2" fill="none" stroke-linecap="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+        </button>
+      </div>
+
       <span style="font-size:12px; color:var(--text-muted); margin-left:auto;">
         ℹ️ Scroll down to preview entire document.
       </span>
@@ -224,7 +252,7 @@ function exportReport() {
 
   openSystemModalWidened('PDF Print Preview & Export', previewBodyHtml, previewFooterHtml);
 
-  // Securely lock the modal body to pass scroll control entirely to pdfViewportArea
+  // Load content into iframe and trigger initial layout scale
   setTimeout(() => {
     const modalBodyContent = document.getElementById('modalBodyContent');
     if (modalBodyContent) modalBodyContent.classList.add('pdf-mode');
@@ -237,15 +265,13 @@ function exportReport() {
       doc.close();
       
       iframe.currentZoom = 1.0;
-      
-      // Allow browser 150ms to finish rendering internal heights before calculating scale
       setTimeout(fitIframeToWidth, 150); 
     }
   }, 100);
 }
 
 // =========================================================
-// Advanced Scale Integration: Absolute Wrapper Projection
+// Advanced Scale Integration: PDF Preview Zoom Engine
 // =========================================================
 function applyIframeScale(scale) {
   const iframe = document.getElementById('pdfPreviewerIframe');
@@ -255,23 +281,17 @@ function applyIframeScale(scale) {
   if (iframe && wrapper) {
     iframe.currentZoom = scale;
     
-    // 1. Detect natural document height organically
     const doc = iframe.contentDocument || iframe.contentWindow.document;
-    let contentHeight = 1123; // Minimum 1 A4 physical height
+    let contentHeight = 1123; 
     if (doc && doc.body) {
         contentHeight = Math.max(1123, doc.body.scrollHeight);
     }
     
-    // 2. Set dimensions & absolute scale transforming
     iframe.style.height = contentHeight + 'px';
     iframe.style.transform = `scale(${scale})`;
-    
-    // 3. Project the scaled dimensions onto the invisible wrapper
-    // This allows the outer gray tray to display precise, single scrollbars!
     wrapper.style.width = (794 * scale) + 'px';
     wrapper.style.height = (contentHeight * scale) + 'px';
     
-    // Sync dropdown UI
     if (select) {
         Array.from(select.options).forEach(opt => {
             if (parseFloat(opt.value) === scale) opt.selected = true;
@@ -291,17 +311,14 @@ function onZoomMenuChange(val) {
 }
 
 function fitIframeToContainer() {
-  const viewport = document.getElementById('pdfViewportArea');
   const iframe = document.getElementById('pdfPreviewerIframe');
-  if (viewport && iframe) {
+  const viewport = document.getElementById('pdfViewportArea');
+  if (iframe && viewport) {
     const doc = iframe.contentDocument || iframe.contentWindow.document;
     const contentHeight = (doc && doc.body) ? Math.max(1123, doc.body.scrollHeight) : 1123;
-      
-    const paddingBuffer = 80; // Safe clearance for gray tray boundaries
-    const scaleWidth = (viewport.clientWidth - paddingBuffer) / 794;
-    const scaleHeight = (viewport.clientHeight - paddingBuffer) / contentHeight;
+    const scaleWidth = (viewport.clientWidth - 80) / 794;
+    const scaleHeight = (viewport.clientHeight - 80) / contentHeight;
     applyIframeScale(Math.min(1.0, scaleWidth, scaleHeight));
-    
     const select = document.getElementById('pdfZoomSelect');
     if (select) select.value = 'fit_page';
   }
@@ -310,12 +327,8 @@ function fitIframeToContainer() {
 function fitIframeToWidth() {
   const viewport = document.getElementById('pdfViewportArea');
   if (viewport) {
-    const paddingBuffer = 80;
-    const scaleWidth = (viewport.clientWidth - paddingBuffer) / 794;
-    
-    // Defaulting to max scale of 1.5 to prevent extreme massive zooms on wide screens
-    applyIframeScale(Math.min(1.5, scaleWidth));
-    
+    const scaleWidth = (viewport.clientWidth - 80) / 794;
+    applyIframeScale(Math.min(1.2, scaleWidth));
     const select = document.getElementById('pdfZoomSelect');
     if (select) select.value = 'fit_width';
   }
