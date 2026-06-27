@@ -258,6 +258,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+### [1.9.1] — 2026-06-28
+
+#### Fixed — `js/ui/modalManager.js`
+
+- **Department name corrected**: About modal developer card updated from `CSIE & EE Double Major` to `CSE & EE Double Major`
+
+---
+
 ### [1.9.0] — 2026-06-28
 
 #### Changed — `js/app.js`
